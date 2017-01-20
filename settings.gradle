@@ -1,0 +1,4 @@
+rootProject.name = 'bell-tm-here'
+
+include 'tm-here-api'
+include 'tm-here-web'
