@@ -30,7 +30,7 @@ and taskSchedule.dayOfWeek = :dayOfWeek
 and taskSchedule.startSection = :startSection
 and (taskSchedule.oddEven = 0
   or taskSchedule.oddEven = 1 and :week % 2 = 1
-  or taskSchedule.oddEven = 2 and :week % 2 = 0) 
+  or taskSchedule.oddEven = 2 and :week % 2 = 0)
 ''', [term: term, teacherId: teacherId, week: week, dayOfWeek: dayOfWeek, startSection: startSection]
     }
 }
