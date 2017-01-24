@@ -10,7 +10,7 @@ import cn.edu.bnuz.bell.operation.TaskSchedule
  *   <li>如果按安排请假，则week和arrangement不为空，dayOfWeek为空</li>
  * </ul>
  */
-class LeaveItem implements Comparable<LeaveItem> {
+class StudentLeaveItem implements Comparable<StudentLeaveItem> {
 
     /**
      * 周次
@@ -27,10 +27,10 @@ class LeaveItem implements Comparable<LeaveItem> {
      */
     TaskSchedule taskSchedule
 
-    static belongsTo = [leaveRequest : LeaveRequest]
+    static belongsTo = [leaveRequest : StudentLeaveForm]
 
     static mapping = {
-        id comment: '请假项ID'
+        id generator: 'identity', comment: '请假项ID'
         week comment: '周次'
         dayOfWeek comment: '星期几'
         taskSchedule comment: '安排'
@@ -42,7 +42,7 @@ class LeaveItem implements Comparable<LeaveItem> {
     }
 
     @Override
-    int compareTo(LeaveItem o) {
+    int compareTo(StudentLeaveItem o) {
         if (dayOfWeek == null && o.dayOfWeek == null) {
             if (taskSchedule == null && o.taskSchedule == null) {
                 week <=> o.week

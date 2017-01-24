@@ -1,23 +1,32 @@
 package cn.edu.bnuz.bell.here
 
 import cn.edu.bnuz.bell.master.Term
+import cn.edu.bnuz.bell.organization.Student
 import cn.edu.bnuz.bell.organization.Teacher
 
-class LeaveRequest {
+/**
+ * 学生请假
+ */
+class StudentLeaveForm {
+    /**
+     * 学生
+     */
+    Student student
+
     /**
      * 学期
      */
     Term term
 
     /**
-     * 事由
-     */
-    String reason
-
-    /**
      * 请假类型
      */
     Integer type
+
+    /**
+     * 事由
+     */
+    String reason
 
     /**
      * 状态
@@ -44,10 +53,13 @@ class LeaveRequest {
      */
     Date dateApproved
 
-    static hasMany = [items : LeaveItem]
+    static belongsTo = [student: Student]
+
+    static hasMany = [items: StudentLeaveItem]
 
     static mapping = {
-        id              comment: '假条ID'
+        id              generator: 'identity', comment: '假条ID'
+        student         comment: '学生'
         term            comment: '学期'
         reason          comment: '事由'
         type            comment: '类别'
