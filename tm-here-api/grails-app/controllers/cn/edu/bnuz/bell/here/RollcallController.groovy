@@ -1,9 +1,10 @@
 package cn.edu.bnuz.bell.here
 
+import cn.edu.bnuz.bell.http.ServiceExceptionHandler
 import cn.edu.bnuz.bell.tm.common.master.TermService
 import cn.edu.bnuz.bell.tm.common.operation.ScheduleService
 
-class RollcallController {
+class RollcallController implements ServiceExceptionHandler {
     TermService termService
     ScheduleService scheduleService
     RollcallService rollcallService
@@ -28,11 +29,35 @@ class RollcallController {
         def dayOfWeek = params.int('day')
         def startSection = params.int('section')
         def students = rollcallService.getRollcallStudents(term, teacherId, week, dayOfWeek, startSection)
+        def rollcalls = rollcallService.getRollcalls(term, teacherId, week, dayOfWeek, startSection)
         renderJson([
                 students: students,
-                rollcallItems: [],
-                leaveRequests: [],
+                rollcalls: rollcalls,
+                leaves: [],
                 locked: false,
         ])
+    }
+
+    def save(String teacherId) {
+        Thread.sleep(1000)
+        def cmd = new RollcallCreateCommand()
+        bindData(cmd, request.JSON)
+        def rollcall = rollcallService.create(teacherId, cmd)
+        renderJson([id: rollcall.id])
+    }
+
+    def update(String teacherId, Long id) {
+        Thread.sleep(1000)
+        def cmd = new RollcallUpdateCommand()
+        bindData(cmd, request.JSON)
+        cmd.id = id
+        rollcallService.update(teacherId, cmd)
+        renderOk()
+    }
+
+    def delete(String teacherId, Long id) {
+        Thread.sleep(1000)
+        rollcallService.delete(teacherId, id)
+        renderOk()
     }
 }
