@@ -27,17 +27,18 @@ class StudentLeaveItem implements Comparable<StudentLeaveItem> {
      */
     TaskSchedule taskSchedule
 
-    static belongsTo = [leaveRequest : StudentLeaveForm]
+    static belongsTo = [form : StudentLeaveForm]
 
     static mapping = {
-        id generator: 'identity', comment: '请假项ID'
-        week comment: '周次'
-        dayOfWeek comment: '星期几'
+        id           generator: 'identity', comment: '请假项ID'
+        form         comment: '请假'
+        week         comment: '周次'
+        dayOfWeek    comment: '星期几'
         taskSchedule comment: '安排'
     }
 
     static constraints = {
-        dayOfWeek nullable: true
+        dayOfWeek    nullable: true
         taskSchedule nullable: true
     }
 

@@ -39,7 +39,6 @@ class RollcallController implements ServiceExceptionHandler {
     }
 
     def save(String teacherId) {
-        Thread.sleep(1000)
         def cmd = new RollcallCreateCommand()
         bindData(cmd, request.JSON)
         def rollcall = rollcallService.create(teacherId, cmd)
@@ -47,7 +46,6 @@ class RollcallController implements ServiceExceptionHandler {
     }
 
     def update(String teacherId, Long id) {
-        Thread.sleep(1000)
         def cmd = new RollcallUpdateCommand()
         bindData(cmd, request.JSON)
         cmd.id = id
@@ -56,7 +54,6 @@ class RollcallController implements ServiceExceptionHandler {
     }
 
     def delete(String teacherId, Long id) {
-        Thread.sleep(1000)
         rollcallService.delete(teacherId, id)
         renderOk()
     }
