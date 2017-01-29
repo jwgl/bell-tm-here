@@ -11,9 +11,11 @@ class UrlMappings {
             "/leaves"(resources: 'studentLeaveForm', includes: ['index'])
         }
 
-        "/leaves"(resources: 'studentLeaveAdmin', includes:[]) {
-            "/reviews"(resources: 'studentLeaveReview', includes: ['show'])
+        "/reviewers"(resources: 'reviewer', 'includes': []) {
+            "/leaves"(resources: 'studentLeaveReview', includes:['index'])
         }
+
+        "/leaves"(resources: 'studentLeavePublic', includes: ['show'])
 
         "500"(view:'/error')
         "404"(view:'/notFound')

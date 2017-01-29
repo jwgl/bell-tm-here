@@ -82,9 +82,6 @@ where item.form.id = :formId
     }
 
     def getFormForShow(String studentId, Long id) {
-        def term = termService.activeTerm
-        def schedules = scheduleService.getStudentSchedules(studentId, term)
-
         def form = getFormInfo(id)
 
         if (!form) {
@@ -97,6 +94,7 @@ where item.form.id = :formId
 
         form.editable = domainStateMachineHandler.canUpdate(form)
 
+        def schedules = scheduleService.getStudentSchedules(studentId, Term.get(form.term))
 
         return [
                 schedules: schedules,
@@ -134,7 +132,7 @@ where item.form.id = :formId
             throw new BadRequestException()
         }
 
-        def term = termService.activeTerm
+        def term = Term.get(form.term)
         def schedules = scheduleService.getStudentSchedules(studentId, term)
 
         return [
