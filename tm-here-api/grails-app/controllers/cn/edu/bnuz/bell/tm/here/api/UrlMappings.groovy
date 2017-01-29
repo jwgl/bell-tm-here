@@ -13,6 +13,16 @@ class UrlMappings {
             }
         }
 
+        "/reviewers"(resources: 'reviewer', includes:[]) {
+            "/leaves"(resources: 'studentLeaveReview', includes: ['index']) {
+                "/workitems"(resources: 'studentLeaveReview', includes: ['show', 'patch'])
+            }
+        }
+
+        "/leaves"(resources: 'studentLeavePublic', includes: ['show']) {
+            "/reviewers"(controller: 'studentLeaveReview', action: 'reviewers', method: 'GET')
+        }
+
         "500"(view: '/error')
         "404"(view: '/notFound')
     }
