@@ -3,7 +3,6 @@ package cn.edu.bnuz.bell.here
 import cn.edu.bnuz.bell.http.BadRequestException
 import cn.edu.bnuz.bell.http.NotFoundException
 import cn.edu.bnuz.bell.master.Term
-import cn.edu.bnuz.bell.organization.Teacher
 import cn.edu.bnuz.bell.security.User
 import cn.edu.bnuz.bell.tm.common.operation.ScheduleService
 import cn.edu.bnuz.bell.workflow.AbstractReviewService
@@ -163,19 +162,7 @@ order by form.dateModified desc
     List<Map> getReviewers(String type, Long id) {
         switch (type) {
             case Activities.CHECK:
-                return Teacher.executeQuery('''
-select new map(
-  checker.id as id,
-  checker.name as name
-)
-from Student s
-join s.adminClass ac
-join ac.counsellor checker
-where s = (
-  select student
-  from StudentLeaveForm
-  where id = :id 
-)''', [id: id])
+                return studentLeaveFormService.getCheckers(id)
             default:
                 throw new BadRequestException()
         }
