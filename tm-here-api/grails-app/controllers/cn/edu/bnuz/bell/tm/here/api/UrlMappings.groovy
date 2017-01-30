@@ -19,9 +19,7 @@ class UrlMappings {
             }
         }
 
-        "/leaves"(resources: 'studentLeavePublic', includes: ['show']) {
-            "/reviewers"(controller: 'studentLeaveReview', action: 'reviewers', method: 'GET')
-        }
+        "/leaves"(resources: 'studentLeavePublic', includes: ['show'])
 
         "500"(view: '/error')
         "404"(view: '/notFound')

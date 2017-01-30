@@ -19,7 +19,6 @@ class StudentLeaveReviewController {
     }
 
     def show(String reviewerId, Long studentLeaveReviewId, String id) {
-        println(reviewerId + " " + studentLeaveReviewId + " " + id)
         if (id == 'undefined') {
             renderJson studentLeaveReviewService.getFormForReview(reviewerId, studentLeaveReviewId)
         } else {
@@ -27,19 +26,19 @@ class StudentLeaveReviewController {
         }
     }
 
-    def patch(String reviewerId, Long studentLeavePublicId, String id, String op) {
+    def patch(String reviewerId, Long studentLeaveReviewId, String id, String op) {
         def operation = Event.valueOf(op)
         switch (operation) {
             case Event.ACCEPT:
                 def cmd = new AcceptCommand()
                 bindData(cmd, request.JSON)
-                cmd.id = studentLeavePublicId
+                cmd.id = studentLeaveReviewId
                 studentLeaveReviewService.accept(cmd, reviewerId, UUID.fromString(id))
                 break
             case Event.REJECT:
                 def cmd = new RejectCommand()
                 bindData(cmd, request.JSON)
-                cmd.id = studentLeavePublicId
+                cmd.id = studentLeaveReviewId
                 studentLeaveReviewService.reject(cmd, reviewerId, UUID.fromString(id))
                 break
             default:
@@ -47,9 +46,5 @@ class StudentLeaveReviewController {
         }
 
         renderOk()
-    }
-
-    def reviewers(Long studentLeavePublicId, String type) {
-        renderJson studentLeaveReviewService.getReviewers(type, studentLeavePublicId)
     }
 }
