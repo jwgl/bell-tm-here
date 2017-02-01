@@ -62,7 +62,7 @@ join form.student student
 join student.adminClass adminClass
 where form.status = :status
   and adminClass.counsellor.id = :userId 
-order by form.dateModified desc
+order by form.dateSubmitted desc
 """, [userId: userId, status: status], [offset: offset, max: max]
     }
 
@@ -71,14 +71,14 @@ order by form.dateModified desc
 
         def workitem = Workitem.findByInstanceAndActivityAndToAndDateProcessedIsNull(
                 WorkflowInstance.load(form.workflowInstanceId),
-                WorkflowActivity.load('student.leave.check'),
+                WorkflowActivity.load('student.leave.approve'),
                 User.load(userId),
         )
         if (workitem) {
             form.workitemId = workitem.id
         }
 
-        checkReviewer(id, 'check', userId)
+        checkReviewer(id, 'approve', userId)
 
         def schedules = scheduleService.getStudentSchedules(form.studentId, Term.get(form.term))
 
@@ -114,7 +114,7 @@ order by form.dateModified desc
      * @param userId 用户ID
      * @param workItemId 工作项ID
      */
-    void accept(AcceptCommand cmd, String userId, UUID workitemId) {
+    void accept(String userId, AcceptCommand cmd, UUID workitemId) {
         StudentLeaveForm form = StudentLeaveForm.get(cmd.id)
 
         if (!form) {
@@ -139,7 +139,7 @@ order by form.dateModified desc
      * @param userId 用户ID
      * @param workItemId 工作项ID
      */
-    void reject(RejectCommand cmd, String userId, UUID workitemId) {
+    void reject(String userId, RejectCommand cmd, UUID workitemId) {
         StudentLeaveForm form = StudentLeaveForm.get(cmd.id)
 
         if (!form) {
@@ -149,7 +149,6 @@ order by form.dateModified desc
         if (!domainStateMachineHandler.canReject(form)) {
             throw new BadRequestException()
         }
-
 
         def activity = Workitem.get(workitemId).activitySuffix
         checkReviewer(cmd.id, activity, userId)
@@ -161,8 +160,8 @@ order by form.dateModified desc
 
     List<Map> getReviewers(String type, Long id) {
         switch (type) {
-            case Activities.CHECK:
-                return studentLeaveFormService.getCheckers(id)
+            case Activities.APPROVE:
+                return studentLeaveFormService.approvers(id)
             default:
                 throw new BadRequestException()
         }

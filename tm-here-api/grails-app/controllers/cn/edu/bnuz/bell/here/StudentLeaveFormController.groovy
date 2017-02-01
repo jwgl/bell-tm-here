@@ -60,11 +60,14 @@ class StudentLeaveFormController {
                 cmd.id = id
                 studentLeaveFormService.submit(studentId, cmd)
                 break
+            case Event.FINISH:
+                studentLeaveFormService.finish(studentId, id)
+                break
         }
         renderOk()
     }
 
-    def checkers(Long studentLeaveFormId) {
-        renderJson studentLeaveFormService.getCheckers(studentLeaveFormId)
+    def approvers(Long studentLeaveFormId) {
+        renderJson studentLeaveFormService.approvers(studentLeaveFormId)
     }
 }

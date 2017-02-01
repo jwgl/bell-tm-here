@@ -33,13 +33,13 @@ class StudentLeaveReviewController {
                 def cmd = new AcceptCommand()
                 bindData(cmd, request.JSON)
                 cmd.id = studentLeaveReviewId
-                studentLeaveReviewService.accept(cmd, reviewerId, UUID.fromString(id))
+                studentLeaveReviewService.accept(reviewerId, cmd, UUID.fromString(id))
                 break
             case Event.REJECT:
                 def cmd = new RejectCommand()
                 bindData(cmd, request.JSON)
                 cmd.id = studentLeaveReviewId
-                studentLeaveReviewService.reject(cmd, reviewerId, UUID.fromString(id))
+                studentLeaveReviewService.reject(reviewerId, cmd, UUID.fromString(id))
                 break
             default:
                 throw new BadRequestException()
