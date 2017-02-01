@@ -9,7 +9,7 @@ class UrlMappings {
 
         "/students"(resources: 'student', includes:[]) {
             "/leaves"(resources: 'studentLeaveForm') {
-                "/checkers"(controller: 'studentLeaveForm', action: 'checkers', method: 'GET')
+                "/approvers"(controller: 'studentLeaveForm', action: 'approvers', method: 'GET')
             }
         }
 

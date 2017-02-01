@@ -6,10 +6,14 @@ import cn.edu.bnuz.bell.http.NotFoundException
 import cn.edu.bnuz.bell.master.Term
 import cn.edu.bnuz.bell.operation.TaskSchedule
 import cn.edu.bnuz.bell.organization.Student
+import cn.edu.bnuz.bell.security.User
 import cn.edu.bnuz.bell.tm.common.master.TermService
 import cn.edu.bnuz.bell.tm.common.operation.ScheduleService
 import cn.edu.bnuz.bell.workflow.DomainStateMachineHandler
 import cn.edu.bnuz.bell.workflow.State
+import cn.edu.bnuz.bell.workflow.WorkflowActivity
+import cn.edu.bnuz.bell.workflow.WorkflowInstance
+import cn.edu.bnuz.bell.workflow.Workitem
 import cn.edu.bnuz.bell.workflow.commands.SubmitCommand
 import grails.transaction.Transactional
 
@@ -279,10 +283,37 @@ where form.student.id = :studentId
 
         domainStateMachineHandler.submit(form, studentId, cmd.to, cmd.comment, cmd.title)
 
+        form.dateSubmitted = new Date()
         form.save()
     }
 
-    def getCheckers(Long id) {
+    def finish(String studentId, Long id) {
+        StudentLeaveForm form = StudentLeaveForm.get(id)
+
+        if (!form) {
+            throw new NotFoundException()
+        }
+
+        if (form.student.id != studentId) {
+            throw new ForbiddenException()
+        }
+
+        if (!domainStateMachineHandler.canFinish(form)) {
+            throw new BadRequestException()
+        }
+
+        def workitem = Workitem.findByInstanceAndActivityAndToAndDateProcessedIsNull(
+                WorkflowInstance.load(form.workflowInstanceId),
+                WorkflowActivity.load('student.leave.view'),
+                User.load(studentId),
+        )
+
+        domainStateMachineHandler.finish(form, studentId, workitem.id)
+
+        form.save()
+    }
+
+    def approvers(Long id) {
         Student.executeQuery '''
 select new map(
   checker.id as id,

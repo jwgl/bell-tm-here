@@ -48,6 +48,11 @@ class StudentLeaveForm implements StateObject {
     Date dateModified
 
     /**
+     * 修改时间
+     */
+    Date dateSubmitted
+
+    /**
      * 批准人
      */
     Teacher approver
@@ -77,18 +82,22 @@ class StudentLeaveForm implements StateObject {
         status           sqlType: 'state', type: StateUserType, comment: '状态'
         dateCreated      comment: '创建时间'
         dateModified     comment: '修改时间'
+        dateSubmitted    comment: '提交时间'
         approver         comment: '审批人'
         dateApproved     comment: '批准时间'
         workflowInstance comment: '工作流实例'
     }
 
     static constraints = {
+        dateSubmitted    nullable: true
         dateApproved     nullable: true
         approver         nullable: true
         workflowInstance nullable: true
     }
 
     String getWorkflowId() {
-        'student.leave'
+        WORKFLOW_ID
     }
+
+    static final WORKFLOW_ID = 'student.leave'
 }
