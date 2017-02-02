@@ -304,7 +304,7 @@ where form.student.id = :studentId
 
         def workitem = Workitem.findByInstanceAndActivityAndToAndDateProcessedIsNull(
                 WorkflowInstance.load(form.workflowInstanceId),
-                WorkflowActivity.load('student.leave.view'),
+                WorkflowActivity.load('student.leave.finish'),
                 User.load(studentId),
         )
 
