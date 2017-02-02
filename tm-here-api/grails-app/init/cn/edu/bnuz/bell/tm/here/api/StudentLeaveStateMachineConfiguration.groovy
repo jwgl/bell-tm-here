@@ -3,6 +3,8 @@ package cn.edu.bnuz.bell.tm.here.api
 import cn.edu.bnuz.bell.workflow.Activities
 import cn.edu.bnuz.bell.workflow.Event
 import cn.edu.bnuz.bell.workflow.State
+import cn.edu.bnuz.bell.workflow.actions.AutoEntryAction
+import cn.edu.bnuz.bell.workflow.actions.ManualEntryAction
 import cn.edu.bnuz.bell.workflow.actions.SubmittedEntryAction
 import cn.edu.bnuz.bell.workflow.config.StandardActionConfiguration
 import org.springframework.beans.factory.annotation.Autowired
@@ -30,8 +32,8 @@ class StudentLeaveStateMachineConfiguration extends EnumStateMachineConfigurerAd
                 .state(State.CREATED,   [actions.logEntryAction()], null)
                 .state(State.SUBMITTED, [actions.logEntryAction(), submittedEntryAction()], [actions.workitemProcessedAction()])
                 .state(State.REJECTED,  [actions.logEntryAction(), actions.rejectedEntryAction()], [actions.workitemProcessedAction()])
-                .state(State.APPROVED,  [actions.logEntryAction(), actions.notifySubmitterAction()], [actions.workitemProcessedAction()])
-                .state(State.FINISHED,  [actions.logEntryAction()], null)
+                .state(State.APPROVED,  [actions.logEntryAction(), approvedEntryAction()], [actions.workitemProcessedAction()])
+                .state(State.FINISHED,  [actions.logEntryAction(), finishedEntryAction()], null)
     }
 
     @Override
@@ -76,5 +78,15 @@ class StudentLeaveStateMachineConfiguration extends EnumStateMachineConfigurerAd
     @Bean
     Action<State, Event> submittedEntryAction() {
         new SubmittedEntryAction(Activities.APPROVE)
+    }
+
+    @Bean
+    Action<State, Event> approvedEntryAction() {
+        new ManualEntryAction('finish')
+    }
+
+    @Bean
+    finishedEntryAction() {
+        new AutoEntryAction()
     }
 }
