@@ -128,7 +128,7 @@ order by form.dateSubmitted desc
         def activity = Workitem.get(workitemId).activitySuffix
         checkReviewer(cmd.id, activity, userId)
 
-        domainStateMachineHandler.accept(form, userId, cmd.comment, workitemId)
+        domainStateMachineHandler.accept(form, userId, cmd.comment, workitemId, form.student.id)
 
         form.save()
     }
