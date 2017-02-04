@@ -80,7 +80,7 @@ order by form.dateSubmitted desc
 
         checkReviewer(id, 'approve', userId)
 
-        def schedules = scheduleService.getStudentSchedules(form.studentId, Term.get(form.term))
+        def schedules = scheduleService.getStudentSchedules(form.studentId, form.term)
 
         return [
                 schedules: schedules,
@@ -100,7 +100,7 @@ order by form.dateSubmitted desc
 
         checkReviewer(id, workitem.activitySuffix, userId)
 
-        def schedules = scheduleService.getStudentSchedules(form.studentId, Term.get(form.term))
+        def schedules = scheduleService.getStudentSchedules(form.studentId, form.term)
 
         return [
                 schedules: schedules,

@@ -1,12 +1,13 @@
 package cn.edu.bnuz.bell.here
 
 import cn.edu.bnuz.bell.http.BadRequestException
+import cn.edu.bnuz.bell.http.ServiceExceptionHandler
 import cn.edu.bnuz.bell.workflow.Event
 import cn.edu.bnuz.bell.workflow.State
 import cn.edu.bnuz.bell.workflow.commands.AcceptCommand
 import cn.edu.bnuz.bell.workflow.commands.RejectCommand
 
-class StudentLeaveReviewController {
+class StudentLeaveReviewController implements ServiceExceptionHandler {
     StudentLeaveReviewService studentLeaveReviewService
 
     def index(String reviewerId) {
