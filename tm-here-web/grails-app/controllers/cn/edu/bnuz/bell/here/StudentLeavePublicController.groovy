@@ -1,6 +1,8 @@
 package cn.edu.bnuz.bell.here
 
-class StudentLeavePublicController {
+import org.springframework.security.access.prepost.PreAuthorize
 
-    def show() { }
+@PreAuthorize('hasAuthority("PERM_STUDENT_LEAVE_READ")')
+class StudentLeavePublicController {
+    def show() {}
 }

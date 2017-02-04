@@ -8,10 +8,11 @@ class RollcallController implements ServiceExceptionHandler {
     TermService termService
     ScheduleService scheduleService
     RollcallService rollcallService
+    StudentLeaveFormService studentLeaveFormService
 
     def index(String teacherId) {
         def term = termService.activeTerm
-        def schedules = scheduleService.getTeacherSchedules(teacherId, term)
+        def schedules = scheduleService.getTeacherSchedules(teacherId, term.id)
         renderJson([
                 term: [
                         startWeek: term.startWeek,
@@ -30,10 +31,12 @@ class RollcallController implements ServiceExceptionHandler {
         def startSection = params.int('section')
         def students = rollcallService.getRollcallStudents(term, teacherId, week, dayOfWeek, startSection)
         def rollcalls = rollcallService.getRollcalls(term, teacherId, week, dayOfWeek, startSection)
+        def leaves = studentLeaveFormService.getLeaves(term, teacherId, week, dayOfWeek, startSection)
+        println leaves
         renderJson([
                 students: students,
                 rollcalls: rollcalls,
-                leaves: [],
+                leaves: leaves,
                 locked: false,
         ])
     }
