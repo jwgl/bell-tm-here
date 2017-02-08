@@ -136,8 +136,8 @@ where item.form.id = :formId
             throw new BadRequestException()
         }
 
+        def schedules = scheduleService.getStudentSchedules(studentId, form.term)
         def term = Term.get(form.term)
-        def schedules = scheduleService.getStudentSchedules(studentId, term.id)
 
         return [
                 term: [
@@ -178,7 +178,7 @@ where form.student.id = :studentId
 ''', [studentId: studentId, term: term, excludeStatus: State.REJECTED, excludeFormId: excludeFormId]
     }
 
-    StudentLeaveForm create(String studentId, LeaveFormCommand cmd) {
+    StudentLeaveForm create(String studentId, StudentLeaveFormCommand cmd) {
         def now = new Date()
 
         StudentLeaveForm form = new StudentLeaveForm(
@@ -206,7 +206,7 @@ where form.student.id = :studentId
         return form
     }
 
-    StudentLeaveForm update(String studentId, LeaveFormCommand cmd) {
+    StudentLeaveForm update(String studentId, StudentLeaveFormCommand cmd) {
         StudentLeaveForm form = StudentLeaveForm.get(cmd.id)
 
         if (!form) {

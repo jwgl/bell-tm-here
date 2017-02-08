@@ -1,5 +1,6 @@
 package cn.edu.bnuz.bell.here
 
-class StudentLeaveReviewController {
+class FreeListenPublicController {
+
     def index() { }
 }

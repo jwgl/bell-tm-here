@@ -34,7 +34,7 @@ class StudentLeaveItem implements Comparable<StudentLeaveItem> {
         form         comment: '请假'
         week         comment: '周次'
         dayOfWeek    comment: '星期几'
-        taskSchedule comment: '安排'
+        taskSchedule comment: '教学安排'
     }
 
     static constraints = {

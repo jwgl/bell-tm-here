@@ -8,10 +8,7 @@ import cn.edu.bnuz.bell.workflow.StateObject
 import cn.edu.bnuz.bell.workflow.StateUserType
 import cn.edu.bnuz.bell.workflow.WorkflowInstance
 
-/**
- * 学生请假
- */
-class StudentLeaveForm implements StateObject {
+class FreeListenForm implements StateObject {
     /**
      * 学生
      */
@@ -21,11 +18,6 @@ class StudentLeaveForm implements StateObject {
      * 学期
      */
     Term term
-
-    /**
-     * 请假类型
-     */
-    Integer type
 
     /**
      * 事由
@@ -53,6 +45,16 @@ class StudentLeaveForm implements StateObject {
     Date dateSubmitted
 
     /**
+     * 审核人
+     */
+    Teacher checker
+
+    /**
+     * 审核时间
+     */
+    Date dateChecked
+
+    /**
      * 批准人
      */
     Teacher approver
@@ -69,20 +71,21 @@ class StudentLeaveForm implements StateObject {
 
     static belongsTo = [student: Student]
 
-    static hasMany = [items: StudentLeaveItem]
+    static hasMany = [items: FreeListenItem]
 
     static mapping = {
-        comment          '学生请假'
+        comment          '免听申请'
         dynamicUpdate    true
-        id               generator: 'identity', comment: '假条ID'
+        id               generator: 'identity', comment: '免听ID'
         student          comment: '学生'
         term             comment: '学期'
-        type             comment: '请假类型'
         reason           length: 250, comment: '请假事由'
         status           sqlType: 'state', type: StateUserType, comment: '状态'
         dateCreated      comment: '创建时间'
         dateModified     comment: '修改时间'
         dateSubmitted    comment: '提交时间'
+        checker          comment: '审核人'
+        dateChecked      comment: '审核时间'
         approver         comment: '审批人'
         dateApproved     comment: '批准时间'
         workflowInstance comment: '工作流实例'
@@ -90,6 +93,7 @@ class StudentLeaveForm implements StateObject {
 
     static constraints = {
         dateSubmitted    nullable: true
+        dateChecked      nullable: true
         dateApproved     nullable: true
         approver         nullable: true
         workflowInstance nullable: true
@@ -99,5 +103,5 @@ class StudentLeaveForm implements StateObject {
         WORKFLOW_ID
     }
 
-    static final WORKFLOW_ID = 'student.leave'
+    static final WORKFLOW_ID = 'student.freel'
 }

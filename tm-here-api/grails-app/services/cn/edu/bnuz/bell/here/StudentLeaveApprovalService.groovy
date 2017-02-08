@@ -9,6 +9,7 @@ import cn.edu.bnuz.bell.workflow.AbstractReviewService
 import cn.edu.bnuz.bell.workflow.Activities
 import cn.edu.bnuz.bell.workflow.DomainStateMachineHandler
 import cn.edu.bnuz.bell.workflow.State
+import cn.edu.bnuz.bell.workflow.StateObject
 import cn.edu.bnuz.bell.workflow.WorkflowActivity
 import cn.edu.bnuz.bell.workflow.WorkflowInstance
 import cn.edu.bnuz.bell.workflow.Workitem
@@ -17,7 +18,7 @@ import cn.edu.bnuz.bell.workflow.commands.RejectCommand
 import grails.transaction.Transactional
 
 @Transactional
-class StudentLeaveReviewService extends AbstractReviewService {
+class StudentLeaveApprovalService extends AbstractReviewService {
     StudentLeaveFormService studentLeaveFormService
     ScheduleService scheduleService
     DomainStateMachineHandler domainStateMachineHandler
@@ -71,14 +72,14 @@ order by form.dateSubmitted desc
 
         def workitem = Workitem.findByInstanceAndActivityAndToAndDateProcessedIsNull(
                 WorkflowInstance.load(form.workflowInstanceId),
-                WorkflowActivity.load('student.leave.approve'),
+                WorkflowActivity.load("${StudentLeaveForm.WORKFLOW_ID}.${Activities.APPROVE}"),
                 User.load(userId),
         )
         if (workitem) {
             form.workitemId = workitem.id
         }
 
-        checkReviewer(id, 'approve', userId)
+        checkReviewer(id, Activities.APPROVE, userId)
 
         def schedules = scheduleService.getStudentSchedules(form.studentId, form.term)
 
