@@ -1,54 +1,54 @@
 package cn.edu.bnuz.bell.here
 
-import cn.edu.bnuz.bell.http.ServiceExceptionHandler
 import cn.edu.bnuz.bell.workflow.Event
 import cn.edu.bnuz.bell.workflow.commands.SubmitCommand
 import org.springframework.security.access.prepost.PreAuthorize
 
-@PreAuthorize('hasAuthority("PERM_STUDENT_LEAVE_WRITE")')
-class StudentLeaveFormController implements ServiceExceptionHandler {
-    StudentLeaveFormService studentLeaveFormService
+@PreAuthorize('hasAuthority("PERM_FREE_LISTEN_WRITE")')
+class FreeListenFormController {
+    FreeListenFormService freeListenFormService
 
     def index(String studentId) {
         def offset = params.int('offset') ?: 0
         def max = params.int('max') ?: 10
-        def count = studentLeaveFormService.formCount(studentId)
-        def forms = studentLeaveFormService.list(studentId, offset, max)
+        def count = freeListenFormService.formCount(studentId)
+        def forms = freeListenFormService.list(studentId, offset, max)
         renderJson([
                 count: count,
                 forms: forms,
         ])
     }
 
+
     def show(String studentId, Long id) {
-        renderJson studentLeaveFormService.getFormForShow(studentId, id)
+        renderJson freeListenFormService.getFormForShow(studentId, id)
     }
 
     def create(String studentId) {
-        renderJson studentLeaveFormService.getFormForCreate(studentId)
+        renderJson freeListenFormService.getFormForCreate(studentId)
     }
 
     def save(String studentId) {
-        def cmd = new StudentLeaveFormCommand()
+        def cmd = new FreeListenFormCommand()
         bindData(cmd, request.JSON)
-        def form = studentLeaveFormService.create(studentId, cmd)
+        def form = freeListenFormService.create(studentId, cmd)
         renderJson([id: form.id])
     }
 
     def edit(String studentId, Long id) {
-        renderJson studentLeaveFormService.getFormForEdit(studentId, id)
+        renderJson freeListenFormService.getFormForEdit(studentId, id)
     }
 
     def update(String studentId, Long id) {
-        def cmd = new StudentLeaveFormCommand()
+        def cmd = new FreeListenFormCommand()
         bindData(cmd, request.JSON)
         cmd.id = id
-        studentLeaveFormService.update(studentId, cmd)
+        freeListenFormService.update(studentId, cmd)
         renderOk()
     }
 
     def delete(String studentId, Long id) {
-        studentLeaveFormService.delete(studentId, id)
+        freeListenFormService.delete(studentId, id)
         renderOk()
     }
 
@@ -59,16 +59,13 @@ class StudentLeaveFormController implements ServiceExceptionHandler {
                 def cmd = new SubmitCommand()
                 bindData(cmd, request.JSON)
                 cmd.id = id
-                studentLeaveFormService.submit(studentId, cmd)
-                break
-            case Event.FINISH:
-                studentLeaveFormService.finish(studentId, id)
+                freeListenFormService.submit(studentId, cmd)
                 break
         }
         renderOk()
     }
 
-    def approvers(Long studentLeaveFormId) {
-        renderJson studentLeaveFormService.approvers(studentLeaveFormId)
+    def checkers(Long studentLeaveFormId) {
+        renderJson freeListenFormService.checkers(studentLeaveFormId)
     }
 }
