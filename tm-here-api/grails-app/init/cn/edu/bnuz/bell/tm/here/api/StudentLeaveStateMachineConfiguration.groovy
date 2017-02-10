@@ -14,11 +14,12 @@ import org.springframework.context.annotation.Import
 import org.springframework.statemachine.action.Action
 import org.springframework.statemachine.config.EnableStateMachine
 import org.springframework.statemachine.config.EnumStateMachineConfigurerAdapter
+import org.springframework.statemachine.config.builders.StateMachineConfigurationConfigurer
 import org.springframework.statemachine.config.builders.StateMachineStateConfigurer
 import org.springframework.statemachine.config.builders.StateMachineTransitionConfigurer
 
 @Configuration
-@EnableStateMachine(name='StudentLeaveForm')
+@EnableStateMachine(name='studentLeaveFormsStateMachine')
 @Import(StandardActionConfiguration)
 class StudentLeaveStateMachineConfiguration extends EnumStateMachineConfigurerAdapter<State, Event> {
     @Autowired
@@ -30,10 +31,10 @@ class StudentLeaveStateMachineConfiguration extends EnumStateMachineConfigurerAd
             .withStates()
                 .initial(State.CREATED)
                 .state(State.CREATED,   [actions.logEntryAction()], null)
-                .state(State.SUBMITTED, [actions.logEntryAction(), submittedEntryAction()], [actions.workitemProcessedAction()])
+                .state(State.SUBMITTED, [actions.logEntryAction(), leaveSubmittedEntryAction()], [actions.workitemProcessedAction()])
                 .state(State.REJECTED,  [actions.logEntryAction(), actions.rejectedEntryAction()], [actions.workitemProcessedAction()])
-                .state(State.APPROVED,  [actions.logEntryAction(), approvedEntryAction()], [actions.workitemProcessedAction()])
-                .state(State.FINISHED,  [actions.logEntryAction(), finishedEntryAction()], null)
+                .state(State.APPROVED,  [actions.logEntryAction(), leaveApprovedEntryAction()], [actions.workitemProcessedAction()])
+                .state(State.FINISHED,  [actions.logEntryAction(), leaveFinishedEntryAction()], null)
     }
 
     @Override
@@ -76,17 +77,17 @@ class StudentLeaveStateMachineConfiguration extends EnumStateMachineConfigurerAd
     }
 
     @Bean
-    Action<State, Event> submittedEntryAction() {
+    Action<State, Event> leaveSubmittedEntryAction() {
         new SubmittedEntryAction(Activities.APPROVE)
     }
 
     @Bean
-    Action<State, Event> approvedEntryAction() {
+    Action<State, Event> leaveApprovedEntryAction() {
         new ManualEntryAction('finish')
     }
 
     @Bean
-    finishedEntryAction() {
+    Action<State, Event> leaveFinishedEntryAction() {
         new AutoEntryAction()
     }
 }

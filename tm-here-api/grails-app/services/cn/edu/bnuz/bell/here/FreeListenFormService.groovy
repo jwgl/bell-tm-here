@@ -9,13 +9,20 @@ import cn.edu.bnuz.bell.organization.Student
 import cn.edu.bnuz.bell.organization.Teacher
 import cn.edu.bnuz.bell.tm.common.master.TermService
 import cn.edu.bnuz.bell.tm.common.operation.ScheduleService
+import cn.edu.bnuz.bell.workflow.DomainStateMachineHandler
 import cn.edu.bnuz.bell.workflow.State
+import cn.edu.bnuz.bell.workflow.commands.SubmitCommand
 import grails.transaction.Transactional
+
+import javax.annotation.Resource
 
 @Transactional
 class FreeListenFormService {
     TermService termService
     ScheduleService scheduleService
+
+    @Resource(name='freeListenFormStateHandler')
+    DomainStateMachineHandler domainStateMachineHandler
 
     def list(String studentId, Integer offset, Integer max) {
         FreeListenForm.executeQuery '''
@@ -94,7 +101,7 @@ where item.form.id = :formId
             throw new ForbiddenException()
         }
 
-        form.editable = true // domainStateMachineHandler.canUpdate(form)
+        form.editable = domainStateMachineHandler.canUpdate(form)
 
         def studentSchedules = scheduleService.getStudentSchedules(studentId, form.term)
         def checkerSchedules = findCheckerOtherSchedules(form.id)
@@ -114,9 +121,9 @@ where item.form.id = :formId
             throw new ForbiddenException()
         }
 
-//        if (!domainStateMachineHandler.canUpdate(form)) {
-//            throw new BadRequestException()
-//        }
+        if (!domainStateMachineHandler.canUpdate(form)) {
+            throw new BadRequestException()
+        }
 
         def schedules = scheduleService.getStudentSchedules(studentId, form.term)
 
@@ -295,7 +302,7 @@ where form.student.id = :studentId
                 checker: Teacher.load(cmd.checkerId),
                 dateCreated: now,
                 dateModified: now,
-                status: State.CREATED, // domainStateMachineHandler.initialState
+                status: domainStateMachineHandler.initialState
         )
 
         cmd.addedItems.each { item ->
@@ -306,7 +313,7 @@ where form.student.id = :studentId
 
         form.save()
 
-        // domainStateMachineHandler.create(form, studentId)
+        domainStateMachineHandler.create(form, studentId)
 
         return form
     }
@@ -322,9 +329,9 @@ where form.student.id = :studentId
             throw new ForbiddenException()
         }
 
-//        if (!domainStateMachineHandler.canUpdate(form)) {
-//            throw new BadRequestException()
-//        }
+        if (!domainStateMachineHandler.canUpdate(form)) {
+            throw new BadRequestException()
+        }
 
         form.reason = cmd.reason
         form.checker = Teacher.load(cmd.checkerId)
@@ -342,7 +349,7 @@ where form.student.id = :studentId
             freeItem.delete()
         }
 
-        // domainStateMachineHandler.update(form, studentId)
+        domainStateMachineHandler.update(form, studentId)
 
         form.save()
     }
@@ -358,14 +365,49 @@ where form.student.id = :studentId
             throw new ForbiddenException()
         }
 
-//        if (!domainStateMachineHandler.canUpdate(form)) {
-//            throw new BadRequestException()
-//        }
+        if (!domainStateMachineHandler.canUpdate(form)) {
+            throw new BadRequestException()
+        }
 
         if (form.workflowInstance) {
             form.workflowInstance.delete()
         }
 
         form.delete()
+    }
+
+    def submit(String studentId, SubmitCommand cmd) {
+        FreeListenForm form = FreeListenForm.get(cmd.id)
+
+        if (!form) {
+            throw new NotFoundException()
+        }
+
+        if (form.student.id != studentId) {
+            throw new ForbiddenException()
+        }
+
+        if (!domainStateMachineHandler.canSubmit(form)) {
+            throw new BadRequestException()
+        }
+
+        println domainStateMachineHandler.stateMachine
+
+        domainStateMachineHandler.submit(form, studentId, cmd.to, cmd.comment, cmd.title)
+
+        form.dateSubmitted = new Date()
+        form.save()
+    }
+
+    List getCheckers(Long id) {
+        FreeListenForm.executeQuery '''
+select new map (
+  checker.id as id,
+  checker.name as name
+)
+from FreeListenForm form
+join form.checker checker
+where form.id = :id
+''', [id: id]
     }
 }

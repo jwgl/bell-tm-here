@@ -7,6 +7,7 @@ class UrlMappings {
             "/rollcalls"(resources: 'rollcall')
             "/freeListens"(resources: 'freeListenCheck', includes: ['index']) {
                 "/workitems"(resources: 'freeListenCheck', includes: ['show', 'patch'])
+                "/approvers"(controller: 'freeListenCheck', action: 'approvers', method: 'GET')
             }
         }
 

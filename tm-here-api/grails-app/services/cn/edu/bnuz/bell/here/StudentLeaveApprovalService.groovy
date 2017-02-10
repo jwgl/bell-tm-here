@@ -2,25 +2,28 @@ package cn.edu.bnuz.bell.here
 
 import cn.edu.bnuz.bell.http.BadRequestException
 import cn.edu.bnuz.bell.http.NotFoundException
-import cn.edu.bnuz.bell.master.Term
 import cn.edu.bnuz.bell.security.User
 import cn.edu.bnuz.bell.tm.common.operation.ScheduleService
 import cn.edu.bnuz.bell.workflow.AbstractReviewService
 import cn.edu.bnuz.bell.workflow.Activities
 import cn.edu.bnuz.bell.workflow.DomainStateMachineHandler
 import cn.edu.bnuz.bell.workflow.State
-import cn.edu.bnuz.bell.workflow.StateObject
 import cn.edu.bnuz.bell.workflow.WorkflowActivity
 import cn.edu.bnuz.bell.workflow.WorkflowInstance
 import cn.edu.bnuz.bell.workflow.Workitem
 import cn.edu.bnuz.bell.workflow.commands.AcceptCommand
 import cn.edu.bnuz.bell.workflow.commands.RejectCommand
 import grails.transaction.Transactional
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.annotation.Qualifier
 
 @Transactional
 class StudentLeaveApprovalService extends AbstractReviewService {
     StudentLeaveFormService studentLeaveFormService
     ScheduleService scheduleService
+
+    @Autowired
+    @Qualifier('studentLeaveFormStateHandler')
     DomainStateMachineHandler domainStateMachineHandler
 
     /**

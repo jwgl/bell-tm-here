@@ -65,7 +65,7 @@ class FreeListenFormController {
         renderOk()
     }
 
-    def checkers(Long studentLeaveFormId) {
-        renderJson freeListenFormService.checkers(studentLeaveFormId)
+    def checkers(Long freeListenFormId) {
+        renderJson freeListenFormService.getCheckers(freeListenFormId)
     }
 }
