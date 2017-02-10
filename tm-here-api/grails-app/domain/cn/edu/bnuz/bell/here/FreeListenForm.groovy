@@ -103,5 +103,5 @@ class FreeListenForm implements StateObject {
         WORKFLOW_ID
     }
 
-    static final WORKFLOW_ID = 'student.freel'
+    static final WORKFLOW_ID = 'schedule.free'
 }
