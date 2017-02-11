@@ -17,10 +17,14 @@ import cn.edu.bnuz.bell.workflow.Workitem
 import cn.edu.bnuz.bell.workflow.commands.SubmitCommand
 import grails.transaction.Transactional
 
+import javax.annotation.Resource
+
 @Transactional
 class StudentLeaveFormService {
     TermService termService
     ScheduleService scheduleService
+
+    @Resource(name='studentLeaveFormStateHandler')
     DomainStateMachineHandler domainStateMachineHandler
 
     def list(String studentId, Integer offset, Integer max) {

@@ -14,16 +14,15 @@ import cn.edu.bnuz.bell.workflow.Workitem
 import cn.edu.bnuz.bell.workflow.commands.AcceptCommand
 import cn.edu.bnuz.bell.workflow.commands.RejectCommand
 import grails.transaction.Transactional
-import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.beans.factory.annotation.Qualifier
+
+import javax.annotation.Resource
 
 @Transactional
 class StudentLeaveApprovalService extends AbstractReviewService {
     StudentLeaveFormService studentLeaveFormService
     ScheduleService scheduleService
 
-    @Autowired
-    @Qualifier('studentLeaveFormStateHandler')
+    @Resource(name='studentLeaveFormStateHandler')
     DomainStateMachineHandler domainStateMachineHandler
 
     /**
@@ -31,14 +30,14 @@ class StudentLeaveApprovalService extends AbstractReviewService {
      * @return 各状态申请数量
      */
     def getCountsByStatus(String userId) {
-        def results = StudentLeaveForm.executeQuery """
+        def results = StudentLeaveForm.executeQuery '''
 select form.status, count(*)
 from StudentLeaveForm form
 join form.student student
 join student.adminClass adminClass
 where adminClass.counsellor.id = :userId
 group by status
-""", [userId: userId]
+''', [userId: userId]
         return results.collectEntries {[it[0].name(), it[1]]}
     }
 
@@ -50,7 +49,7 @@ group by status
      * @return
      */
     def findAllByStatus(String userId, State status, int offset, int max) {
-        StudentLeaveForm.executeQuery """
+        StudentLeaveForm.executeQuery '''
 select new map(
   form.id as id,
   student.id as studentId,
@@ -67,7 +66,7 @@ join student.adminClass adminClass
 where form.status = :status
   and adminClass.counsellor.id = :userId 
 order by form.dateSubmitted desc
-""", [userId: userId, status: status], [offset: offset, max: max]
+''', [userId: userId, status: status], [offset: offset, max: max]
     }
 
     def getFormForReview(String userId, Long id) {
