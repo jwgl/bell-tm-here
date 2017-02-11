@@ -20,7 +20,7 @@ import org.springframework.statemachine.persist.StateMachinePersister
         DefaultStateMachinePersistConfiguration,
 ])
 class WorkflowConfiguration {
-    @Bean('studentLeaveFormsStateMachine')
+    @Bean('studentLeaveFormStateHandler')
     DomainStateMachineHandler studentLeaveFormStateHandler(
             @Qualifier('studentLeaveFormsStateMachine')
             StateMachine<State, Event> stateMachine,
