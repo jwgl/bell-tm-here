@@ -1,11 +1,12 @@
 package cn.edu.bnuz.bell.here
 
+import cn.edu.bnuz.bell.http.ServiceExceptionHandler
 import cn.edu.bnuz.bell.workflow.Event
 import cn.edu.bnuz.bell.workflow.commands.SubmitCommand
 import org.springframework.security.access.prepost.PreAuthorize
 
 @PreAuthorize('hasAuthority("PERM_FREE_LISTEN_WRITE")')
-class FreeListenFormController {
+class FreeListenFormController implements ServiceExceptionHandler {
     FreeListenFormService freeListenFormService
 
     def index(String studentId) {
