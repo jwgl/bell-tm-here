@@ -8,7 +8,8 @@ class RollcallController implements ServiceExceptionHandler {
     TermService termService
     ScheduleService scheduleService
     RollcallService rollcallService
-    StudentLeaveFormService studentLeaveFormService
+    StudentLeavePublicService studentLeavePublicService
+    FreeListenPublicService freeListenPublicService
 
     def index(String teacherId) {
         def term = termService.activeTerm
@@ -20,7 +21,7 @@ class RollcallController implements ServiceExceptionHandler {
                         currentWeek: 5/*term.currentWeek*/,
                 ],
                 schedules: schedules,
-                config: [hideLeave: false, hideFree: false, hideCancel: false, random: 0],
+                config: [hideLeave: false, hideFree: false, hideCancel: false, random: 100],
         ])
     }
 
@@ -31,12 +32,14 @@ class RollcallController implements ServiceExceptionHandler {
         def startSection = params.int('section')
         def students = rollcallService.getRollcallStudents(term, teacherId, week, dayOfWeek, startSection)
         def rollcalls = rollcallService.getRollcalls(term, teacherId, week, dayOfWeek, startSection)
-        def leaves = studentLeaveFormService.getLeaves(term, teacherId, week, dayOfWeek, startSection)
-        println leaves
+        def leaves = studentLeavePublicService.getRollcallLeaves(term, teacherId, week, dayOfWeek, startSection)
+        def freeListens = freeListenPublicService.getRollcallFreeListens(term, teacherId, week, dayOfWeek, startSection)
         renderJson([
                 students: students,
                 rollcalls: rollcalls,
                 leaves: leaves,
+                freeListens: freeListens,
+                cancelExams: [],
                 locked: false,
         ])
     }

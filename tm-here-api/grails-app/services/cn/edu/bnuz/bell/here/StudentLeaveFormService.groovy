@@ -331,48 +331,4 @@ where s = (
   from StudentLeaveForm
   where id = :id )''', [id: id]
     }
-
-    /**
-     * 获取指定条件的学生请假列表，用于考勤。
-     * @param term 学期
-     * @param teacherId 教师ID
-     * @param week 周次
-     * @param dayOfWeek 星期几
-     * @param startSection 开始节
-     * @return 请假列表
-     */
-    def getLeaves(Term term, String teacherId, Integer week, Integer dayOfWeek, Integer startSection) {
-        StudentLeaveForm.executeQuery '''
-select new map(
-  form.id as id,
-  taskStudent.student.id as studentId,
-  form.type as type
-)
-From StudentLeaveForm form
-join form.items item,
-CourseClass courseClass
-join courseClass.tasks task
-join task.schedules taskSchedule
-join task.students taskStudent
-where form.status in ('APPROVED', 'FINISHED')
-  and form.term = :term
-  and item.week = :week
-  and (
-    item.taskSchedule = taskSchedule or
-    item.dayOfWeek = taskSchedule.dayOfWeek or
-    item.taskSchedule is null and item.dayOfWeek is null
-  )
-  and form.student = taskStudent.student
-  and courseClass.term = :term
-  and :week between taskSchedule.startWeek and taskSchedule.endWeek
-  and (
-    taskSchedule.oddEven = 0 or
-    taskSchedule.oddEven = 1 and :week % 2 = 1 or
-    taskSchedule.oddEven = 2 and :week % 2 = 0
-  )
-  and taskSchedule.dayOfWeek = :dayOfWeek
-  and taskSchedule.startSection = :startSection
-  and taskSchedule.teacher.id = :teacherId
-''', [term: term, teacherId: teacherId, week: week, dayOfWeek: dayOfWeek, startSection: startSection]
-    }
 }
