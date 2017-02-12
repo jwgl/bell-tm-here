@@ -1,11 +1,15 @@
 package cn.edu.bnuz.bell.here
 
+import cn.edu.bnuz.bell.http.ServiceExceptionHandler
+import cn.edu.bnuz.bell.security.SecurityService
+import org.springframework.security.access.prepost.PreAuthorize
 
-import grails.rest.*
-import grails.converters.*
+@PreAuthorize('hasAuthority("PERM_FREE_LISTEN_READ")')
+class FreeListenPublicController implements ServiceExceptionHandler {
+    FreeListenPublicService freeListenPublicService
+    SecurityService securityService
 
-class FreeListenPublicController {
-	static responseFormats = ['json', 'xml']
-	
-    def index() { }
+    def show(Long id) {
+        renderJson freeListenPublicService.getFormForShow(securityService.userId, id)
+    }
 }

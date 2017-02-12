@@ -1,6 +1,8 @@
 package cn.edu.bnuz.bell.here
 
-class FreeListenPublicController {
+import org.springframework.security.access.prepost.PreAuthorize
 
-    def index() { }
+@PreAuthorize('hasAuthority("PERM_FREE_LISTEN_READ")')
+class FreeListenPublicController {
+    def show() { }
 }
