@@ -391,8 +391,6 @@ where form.student.id = :studentId
             throw new BadRequestException()
         }
 
-        println domainStateMachineHandler.stateMachine
-
         domainStateMachineHandler.submit(form, studentId, cmd.to, cmd.comment, cmd.title)
 
         form.dateSubmitted = new Date()

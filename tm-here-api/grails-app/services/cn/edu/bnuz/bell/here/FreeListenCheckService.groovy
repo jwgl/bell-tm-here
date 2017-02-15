@@ -2,6 +2,7 @@ package cn.edu.bnuz.bell.here
 
 import cn.edu.bnuz.bell.http.BadRequestException
 import cn.edu.bnuz.bell.http.NotFoundException
+import cn.edu.bnuz.bell.organization.Teacher
 import cn.edu.bnuz.bell.security.User
 import cn.edu.bnuz.bell.service.DataAccessService
 import cn.edu.bnuz.bell.tm.common.operation.ScheduleService
@@ -133,9 +134,6 @@ order by form.dateChecked desc
     }
 
     void accept(AcceptCommand cmd, String teacherId, UUID workitemId) {
-        println cmd.id
-        println teacherId
-        println workitemId
         FreeListenForm form = FreeListenForm.get(cmd.id)
 
         if (!form) {
@@ -153,6 +151,7 @@ order by form.dateChecked desc
 
         checkReviewer(cmd.id, activity, teacherId)
 
+        form.checker = Teacher.load(teacherId)
         form.dateChecked = new Date()
 
         domainStateMachineHandler.accept(form, teacherId, cmd.comment, workitemId, cmd.to)
