@@ -7,7 +7,7 @@ class FreeListenCheckInterceptor {
     SecurityService securityService
 
     boolean before() {
-        if (params.checkerId != securityService.userId) {
+        if (params.teacherId != securityService.userId) {
             render(status: HttpStatus.FORBIDDEN)
             return false
         } else {

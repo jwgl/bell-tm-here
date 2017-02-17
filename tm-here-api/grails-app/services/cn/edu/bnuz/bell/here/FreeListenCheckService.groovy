@@ -171,9 +171,6 @@ order by form.dateChecked desc
         }
 
         def activity = Workitem.get(workitemId).activitySuffix
-        if (activity != Activities.CHECK) {
-            throw new BadRequestException()
-        }
 
         checkReviewer(cmd.id, activity, teacherId)
 
