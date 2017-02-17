@@ -5,11 +5,6 @@ class FreeListenFormCommand {
     String reason
     String checkerId
 
-    List<LeaveItem> addedItems
-    List<Integer> removedItems
-
-    class LeaveItem {
-        Long id
-        String taskScheduleId
-    }
+    List<String> addedItems
+    List<String> removedItems
 }

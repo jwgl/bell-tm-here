@@ -158,11 +158,9 @@ where item.form.id = :formId
 
     /**
      * 获取指定学生和学期的所有请假项，用于前台判断请假是否冲突。
-     * leaveRequestId指定不包含的请假条的ID，用于编辑表单；新建请假条时，可省略此参数。
-     * 审核不通过的请假条允许再次申请，不包含在返回值中。
      * @param studentId 学生ID
      * @param term 学期
-     * @param excludeFormId 不包含的此请假条ID
+     * @param excludeFormId 不包含的此请假条ID，用于编辑表单；新建请假条时，可省略此参数
      * @return 请假项列表
      */
     List findExistedLeaveItems(String studentId, Term term, Long excludeFormId) {
@@ -177,9 +175,8 @@ from StudentLeaveItem item
 join item.form form
 where form.student.id = :studentId
   and form.term = :term
-  and form.status != :excludeStatus
   and form.id != :excludeFormId
-''', [studentId: studentId, term: term, excludeStatus: State.REJECTED, excludeFormId: excludeFormId]
+''', [studentId: studentId, term: term, excludeFormId: excludeFormId]
     }
 
     StudentLeaveForm create(String studentId, StudentLeaveFormCommand cmd) {
