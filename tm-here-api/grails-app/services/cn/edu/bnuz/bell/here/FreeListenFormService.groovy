@@ -49,6 +49,7 @@ select new map(
   form.term.id as term,
   student.id as studentId,
   student.name as studentName,
+  student.atSchool as atSchool,
   adminClass.name as adminClass,
   major.grade as grade,
   subject.name as subject,
@@ -81,13 +82,29 @@ where form.id = :id
         form.items = FreeListenItem.executeQuery '''
 select new map(
   item.id as id,
-  item.taskSchedule.id as taskScheduleId
+  item.taskSchedule.id as scheduleId
 )
 from FreeListenItem item
 where item.form.id = :formId
 ''', [formId: id]
 
+        form.existedItems = findExistedFreeListenItems(form.studentId, form.term, form.id)
+
         return form
+    }
+
+    List findExistedFreeListenItems(String studentId, Integer termId, Long excludeFormId) {
+        FreeListenForm.executeQuery '''
+select new map(
+  item.taskSchedule.id as taskScheduleId,
+  form.status as status
+)
+from FreeListenItem item
+join item.form form
+where form.student.id = :studentId
+  and form.term.id = :termId
+  and form.id != :excludeFormId
+''', [studentId: studentId, termId: termId, excludeFormId: excludeFormId]
     }
 
     def getFormForShow(String studentId, Long id) {
@@ -104,12 +121,10 @@ where item.form.id = :formId
         form.editable = domainStateMachineHandler.canUpdate(form)
 
         def studentSchedules = scheduleService.getStudentSchedules(studentId, form.term)
-        def checkerSchedules = findCheckerOtherSchedules(form.id)
         def departmentSchedules = findDepartmentOtherSchedules(form.id)
         return [
                 form: form,
                 studentSchedules: studentSchedules,
-                checkerSchedules: checkerSchedules,
                 departmentSchedules: departmentSchedules,
         ]
     }
@@ -133,72 +148,12 @@ where item.form.id = :formId
         ]
     }
 
-    /**
-     * 查找免听项之外同一教师其它开课情况
-     * @param formId 免听ID
-     */
-    def findCheckerOtherSchedules(Long formId) {
-        TaskSchedule.executeQuery '''
-select new map(
-  schedule.id as id,
-  task.id as taskId,
-  courseClass.id as courseClassId,
-  courseClass.name as courseClassName,
-  courseTeacher.id as courseTeacherId,
-  courseTeacher.name as courseTeacherName,
-  scheduleTeacher.id as teacherId,
-  scheduleTeacher.name as teacherName,
-  schedule.startWeek as startWeek,
-  schedule.endWeek as endWeek,
-  schedule.oddEven as oddEven,
-  schedule.dayOfWeek as dayOfWeek,
-  schedule.startSection as startSection,
-  schedule.totalSection as totalSection,
-  course.name as course,
-  courseItem.name as courseItem,
-  place.name as place
-)
-from TaskSchedule schedule
-join schedule.task task
-join task.courseClass courseClass
-join courseClass.course course
-join courseClass.teacher courseTeacher
-join schedule.teacher scheduleTeacher
-left join task.courseItem courseItem
-left join schedule.place place
-where (courseClass.term.id,
-       courseClass.department.id,
-       courseTeacher.id,
-       course.id,
-       coalesce(courseItem.id, '0')) in (
-    select courseClass.term.id,
-        courseClass.department.id,
-        courseClass.teacher.id,
-        courseClass.course.id,
-        coalesce(courseItem.id, '0')
-    from FreeListenForm form
-    join form.items item
-    join item.taskSchedule schedule
-    join schedule.task task
-    join task.courseClass courseClass
-    left join task.courseItem courseItem
-    where form.id = :formId
-) and courseClass.id not in (
-    select task.courseClass.id
-    from FreeListenForm form
-    join form.items item
-    join item.taskSchedule schedule
-    join schedule.task task
-    where form.id = :formId    
-)''', [formId: formId]
-    }
-
-    /**
-     * 查找免听项之外同一开课单位其它教师其它开课情况
+     /**
+     * 查找免听项之外同一开课单位其它开课情况
      * @param formId 免听ID
      */
     def findDepartmentOtherSchedules(Long formId) {
-        TaskSchedule.executeQuery '''
+        List schedules = TaskSchedule.executeQuery '''
 select new map(
   schedule.id as id,
   task.id as taskId,
@@ -248,15 +203,35 @@ where (courseClass.term.id,
     join item.taskSchedule schedule
     join schedule.task task
     where form.id = :formId     
-) and courseTeacher.id not in (
-    select courseClass.teacher.id
-    from FreeListenForm form
-    join form.items item
-    join item.taskSchedule schedule
+) and (schedule.dayOfWeek, schedule.startSection) not in (
+    select schedule.dayOfWeek, schedule.startSection
+    from TaskSchedule schedule
     join schedule.task task
-    join task.courseClass courseClass
-    where form.id = :formId         
+    join task.students taskStudent
+    where taskStudent.student = (
+        select student from FreeListenForm where id = :formId
+    )
 )''', [formId: formId]
+
+        Map<Integer, List> groups = schedules.groupBy {s ->
+            s.dayOfWeek * 100 + s.startSection
+        }
+
+        // 公共课（如英语）同一课号的教学班很多，这里进行限制显示的数量
+        def maxLength = 3
+        groups.forEach { key, group ->
+            while (group.size() > maxLength) {
+                def schedule = group.pop()
+                schedules.remove(schedule)
+                schedules.findAll {it.courseClassId == schedule.courseClassId}.forEach { other ->
+                    def otherGroup = groups[other.dayOfWeek * 100 + other.startSection]
+                    group.remove(other)
+                    schedules.remove(other)
+                }
+            }
+        }
+
+        return schedules
     }
 
     def getFormForCreate(String studentId) {
@@ -271,25 +246,10 @@ where (courseClass.term.id,
                 ],
                 form: [
                         items: [],
+                        existedItems: findExistedFreeListenItems(studentId, term.id, 0),
                 ],
                 schedules: schedules,
-                existedItems: findExistedFreeListenItems(studentId, term, 0),
         ]
-    }
-
-    List findExistedFreeListenItems(String studentId, Term term, Long excludeFormId) {
-        FreeListenForm.executeQuery '''
-select new map (
-  item.id as id,
-  item.taskSchedule.id as taskScheduleId
-) 
-from FreeListenItem item
-join item.form form
-where form.student.id = :studentId
-  and form.term = :term
-  and form.status != :excludeStatus
-  and form.id != :excludeFormId
-''', [studentId: studentId, term: term, excludeStatus: State.REJECTED, excludeFormId: excludeFormId]
     }
 
     FreeListenForm create(String studentId, FreeListenFormCommand cmd) {
@@ -307,7 +267,7 @@ where form.student.id = :studentId
 
         cmd.addedItems.each { item ->
             form.addToItems(new FreeListenItem(
-                   taskSchedule: TaskSchedule.load(item.taskScheduleId)
+                   taskSchedule: TaskSchedule.load(item)
             ))
         }
 
@@ -337,14 +297,14 @@ where form.student.id = :studentId
         form.checker = Teacher.load(cmd.checkerId)
         form.dateModified = new Date()
 
-        cmd.addedItems.each { item ->
+        cmd.addedItems.each { taskScheduleId ->
             form.addToItems(new FreeListenItem(
-                    taskSchedule: TaskSchedule.load(item.taskScheduleId)
+                    taskSchedule: TaskSchedule.load(taskScheduleId)
             ))
         }
 
-        cmd.removedItems.each {
-            def freeItem = FreeListenItem.load(it)
+        cmd.removedItems.each { id ->
+            def freeItem = FreeListenItem.load(id)
             form.removeFromItems(freeItem)
             freeItem.delete()
         }

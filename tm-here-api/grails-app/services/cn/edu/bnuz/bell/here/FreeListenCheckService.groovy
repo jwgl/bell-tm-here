@@ -106,12 +106,10 @@ order by form.dateChecked desc
         checkReviewer(id, activity, teacherId)
 
         def studentSchedules = scheduleService.getStudentSchedules(form.studentId, form.term)
-        def checkerSchedules = freeListenFormService.findCheckerOtherSchedules(form.id)
         def departmentSchedules = freeListenFormService.findDepartmentOtherSchedules(form.id)
         return [
                 form: form,
                 studentSchedules: studentSchedules,
-                checkerSchedules: checkerSchedules,
                 departmentSchedules: departmentSchedules,
         ]
     }
@@ -123,12 +121,10 @@ order by form.dateChecked desc
         checkReviewer(id, activity, teacherId)
 
         def studentSchedules = scheduleService.getStudentSchedules(form.studentId, form.term)
-        def checkerSchedules = freeListenFormService.findCheckerOtherSchedules(form.id)
         def departmentSchedules = freeListenFormService.findDepartmentOtherSchedules(form.id)
         return [
                 form: form,
                 studentSchedules: studentSchedules,
-                checkerSchedules: checkerSchedules,
                 departmentSchedules: departmentSchedules,
         ]
     }
