@@ -22,12 +22,11 @@ import javax.annotation.Resource
 @Transactional
 class FreeListenCheckService extends AbstractReviewService {
     FreeListenFormService freeListenFormService
-    DataAccessService dataAccessService
     ScheduleService scheduleService
+    DataAccessService dataAccessService
 
     @Resource(name='freeListenFormStateHandler')
     DomainStateMachineHandler domainStateMachineHandler
-
 
     def getCounts(String teacherId) {
         def pending = dataAccessService.getInteger '''

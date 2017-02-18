@@ -3,23 +3,24 @@ package cn.edu.bnuz.bell.here
 import cn.edu.bnuz.bell.http.BadRequestException
 import cn.edu.bnuz.bell.http.ForbiddenException
 import cn.edu.bnuz.bell.http.NotFoundException
-import cn.edu.bnuz.bell.master.Term
 import cn.edu.bnuz.bell.operation.TaskSchedule
 import cn.edu.bnuz.bell.organization.Student
 import cn.edu.bnuz.bell.organization.Teacher
+import cn.edu.bnuz.bell.system.SystemConfigService
 import cn.edu.bnuz.bell.tm.common.master.TermService
 import cn.edu.bnuz.bell.tm.common.operation.ScheduleService
 import cn.edu.bnuz.bell.workflow.DomainStateMachineHandler
-import cn.edu.bnuz.bell.workflow.State
 import cn.edu.bnuz.bell.workflow.commands.SubmitCommand
 import grails.transaction.Transactional
 
 import javax.annotation.Resource
+import java.time.LocalDate
 
 @Transactional
 class FreeListenFormService {
     TermService termService
     ScheduleService scheduleService
+    SystemConfigService systemConfigService
 
     @Resource(name='freeListenFormStateHandler')
     DomainStateMachineHandler domainStateMachineHandler
@@ -40,6 +41,14 @@ order by form.dateCreated desc
 
     def formCount(String studentId) {
         FreeListenForm.countByStudent(Student.load(studentId))
+    }
+
+    def getConfig() {
+        [
+                startDate: systemConfigService.getDate(FreeListenForm.CONFIG_START_DATE),
+                endDate: systemConfigService.getDate(FreeListenForm.CONFIG_END_DATE),
+                today: LocalDate.now(),
+        ]
     }
 
     def getFormInfo(Long id) {
@@ -118,7 +127,12 @@ where form.student.id = :studentId
             throw new ForbiddenException()
         }
 
-        form.editable = domainStateMachineHandler.canUpdate(form)
+        def config = getConfig()
+        if (config.today >= config.startDate && config.today <= config.endDate) {
+            form.editable = domainStateMachineHandler.canUpdate(form)
+        } else {
+            form.editable = false
+        }
 
         def studentSchedules = scheduleService.getStudentSchedules(studentId, form.term)
         def departmentSchedules = findDepartmentOtherSchedules(form.id)
@@ -235,6 +249,8 @@ where (courseClass.term.id,
     }
 
     def getFormForCreate(String studentId) {
+        checkOpeningDate()
+
         def term = termService.activeTerm
         def schedules = scheduleService.getStudentSchedules(studentId, term.id)
 
@@ -253,6 +269,8 @@ where (courseClass.term.id,
     }
 
     FreeListenForm create(String studentId, FreeListenFormCommand cmd) {
+        checkOpeningDate()
+
         def now = new Date()
 
         FreeListenForm form = new FreeListenForm(
@@ -279,6 +297,8 @@ where (courseClass.term.id,
     }
 
     FreeListenForm update(String studentId, FreeListenFormCommand cmd) {
+        checkOpeningDate()
+
         FreeListenForm form = FreeListenForm.get(cmd.id)
 
         if (!form) {
@@ -337,6 +357,8 @@ where (courseClass.term.id,
     }
 
     def submit(String studentId, SubmitCommand cmd) {
+        checkOpeningDate()
+
         FreeListenForm form = FreeListenForm.get(cmd.id)
 
         if (!form) {
@@ -367,5 +389,12 @@ from FreeListenForm form
 join form.checker checker
 where form.id = :id
 ''', [id: id]
+    }
+
+    def checkOpeningDate() {
+        def config = getConfig()
+        if (config.today >= config.startDate && config.today <= config.endDate) {
+            throw new BadRequestException()
+        }
     }
 }

@@ -14,9 +14,12 @@ class FreeListenFormController implements ServiceExceptionHandler {
         def max = params.int('max') ?: 10
         def count = freeListenFormService.formCount(studentId)
         def forms = freeListenFormService.list(studentId, offset, max)
+        def config = freeListenFormService.getConfig()
+
         renderJson([
                 count: count,
                 forms: forms,
+                config: config,
         ])
     }
 
