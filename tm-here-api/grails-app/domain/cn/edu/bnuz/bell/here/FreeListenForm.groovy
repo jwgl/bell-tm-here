@@ -104,4 +104,6 @@ class FreeListenForm implements StateObject {
     }
 
     static final WORKFLOW_ID = 'schedule.free'
+    static final CONFIG_START_DATE = 'schedule.free.start_date'
+    static final CONFIG_END_DATE = 'schedule.free.end_date'
 }
