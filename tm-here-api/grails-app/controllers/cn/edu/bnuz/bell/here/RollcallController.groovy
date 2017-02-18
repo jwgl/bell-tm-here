@@ -18,7 +18,7 @@ class RollcallController implements ServiceExceptionHandler {
                 term: [
                         startWeek: term.startWeek,
                         endWeek: term.endWeek,
-                        currentWeek: 5/*term.currentWeek*/,
+                        currentWeek: term.currentWeek,
                 ],
                 schedules: schedules,
                 config: [hideLeave: false, hideFree: false, hideCancel: false, random: 100],
