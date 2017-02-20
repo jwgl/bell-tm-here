@@ -253,7 +253,7 @@ where (courseClass.term.id,
 
         def term = termService.activeTerm
         def schedules = scheduleService.getStudentSchedules(studentId, term.id)
-
+        def student = Student.get(studentId)
         return [
                 term: [
                         startWeek: term.startWeek,
@@ -261,6 +261,10 @@ where (courseClass.term.id,
                         currentWeek: term.currentWeek,
                 ],
                 form: [
+                        term: term.id,
+                        studentId: student.id,
+                        studentName: student.name,
+                        atSchool: student.atSchool,
                         items: [],
                         existedItems: findExistedFreeListenItems(studentId, term.id, 0),
                 ],
@@ -393,7 +397,7 @@ where form.id = :id
 
     def checkOpeningDate() {
         def config = getConfig()
-        if (config.today >= config.startDate && config.today <= config.endDate) {
+        if (config.today < config.startDate || config.today > config.endDate) {
             throw new BadRequestException()
         }
     }
