@@ -61,14 +61,15 @@ and taskSchedule.startSection = :startSection
     }
 
     def create(String teacherId, RollcallCreateCommand cmd) {
+        def now = new Date()
         def rollcall = new Rollcall(
                 teacher: Teacher.load(teacherId),
                 student: Student.load(cmd.studentId),
                 taskSchedule: TaskSchedule.load(cmd.taskScheduleId),
                 week: cmd.week,
                 type: cmd.type,
-                dateCreated: new Date(),
-                dateModified: new Date(),
+                dateCreated: now,
+                dateModified: now,
         )
         rollcall.save()
     }
