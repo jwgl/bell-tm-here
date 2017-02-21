@@ -1,6 +1,7 @@
 package cn.edu.bnuz.bell.here
 
 import cn.edu.bnuz.bell.http.ServiceExceptionHandler
+import cn.edu.bnuz.bell.system.SystemConfigService
 import cn.edu.bnuz.bell.workflow.Event
 import cn.edu.bnuz.bell.workflow.commands.SubmitCommand
 import org.springframework.security.access.prepost.PreAuthorize
@@ -14,12 +15,13 @@ class FreeListenFormController implements ServiceExceptionHandler {
         def max = params.int('max') ?: 10
         def count = freeListenFormService.formCount(studentId)
         def forms = freeListenFormService.list(studentId, offset, max)
-        def config = freeListenFormService.getConfig()
-
+        def config = freeListenFormService.getDateConfig()
+        def notice = freeListenFormService.getNotice()
         renderJson([
                 count: count,
                 forms: forms,
                 config: config,
+                notice: notice,
         ])
     }
 

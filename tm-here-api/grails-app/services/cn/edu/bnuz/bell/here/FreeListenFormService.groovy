@@ -43,12 +43,16 @@ order by form.dateCreated desc
         FreeListenForm.countByStudent(Student.load(studentId))
     }
 
-    def getConfig() {
+    def getDateConfig() {
         [
                 startDate: systemConfigService.getDate(FreeListenForm.CONFIG_START_DATE),
                 endDate: systemConfigService.getDate(FreeListenForm.CONFIG_END_DATE),
                 today: LocalDate.now(),
         ]
+    }
+
+    def getNotice() {
+        systemConfigService.getString(FreeListenForm.CONFIG_NOTICE)
     }
 
     def getFormInfo(Long id) {
@@ -127,7 +131,7 @@ where form.student.id = :studentId
             throw new ForbiddenException()
         }
 
-        def config = getConfig()
+        def config = getDateConfig()
         if (config.today >= config.startDate && config.today <= config.endDate) {
             form.editable = domainStateMachineHandler.canUpdate(form)
         } else {
@@ -396,7 +400,7 @@ where form.id = :id
     }
 
     def checkOpeningDate() {
-        def config = getConfig()
+        def config = getDateConfig()
         if (config.today < config.startDate || config.today > config.endDate) {
             throw new BadRequestException()
         }
