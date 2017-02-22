@@ -13,7 +13,7 @@ class StudentLeaveApprovalController implements ServiceExceptionHandler {
     StudentLeaveApprovalService studentLeaveApprovalService
 
     def index(String approverId) {
-        def status = State.valueOf(params.status)
+        def status = State.valueOf(params.status as String)
         def offset = params.int("offset") ?: 0
         def max = params.int("max") ?: (params.int("offset") ? 20 : Integer.MAX_VALUE)
         def forms = studentLeaveApprovalService.findAllByStatus(approverId, status, offset, max)
@@ -48,6 +48,6 @@ class StudentLeaveApprovalController implements ServiceExceptionHandler {
                 throw new BadRequestException()
         }
 
-        renderOk()
+        show(approverId, studentLeaveApprovalId, id)
     }
 }

@@ -60,7 +60,7 @@ class FreeListenCheckController implements ServiceExceptionHandler {
                 throw new BadRequestException()
         }
 
-        renderOk()
+        show(teacherId, freeListenCheckId, id)
     }
 
     def approvers(String teacherId, Long freeListenCheckId) {
