@@ -63,6 +63,6 @@ class FreeListenApprovalController implements ServiceExceptionHandler{
                 throw new BadRequestException()
         }
 
-        renderOk()
+        show(approverId, freeListenApprovalId, id)
     }
 }
