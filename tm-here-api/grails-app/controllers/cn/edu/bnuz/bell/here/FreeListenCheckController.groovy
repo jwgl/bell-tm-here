@@ -10,7 +10,7 @@ import org.springframework.security.access.prepost.PreAuthorize
 
 @PreAuthorize('hasAuthority("PERM_FREE_LISTEN_CHECK")')
 class FreeListenCheckController implements ServiceExceptionHandler {
-	FreeListenCheckService freeListenCheckService
+    FreeListenCheckService freeListenCheckService
     FreeListenReviewerService freeListenReviewerService
 
     def index(String teacherId) {
