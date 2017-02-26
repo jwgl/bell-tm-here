@@ -28,7 +28,7 @@ class StudentLeaveFormService {
     DomainStateMachineHandler domainStateMachineHandler
 
     def list(String studentId, Integer offset, Integer max) {
-        StudentLeaveForm.executeQuery '''
+        def forms = StudentLeaveForm.executeQuery '''
 select new map(
   form.id as id,
   form.type as type,
@@ -40,10 +40,10 @@ from StudentLeaveForm form
 where form.student.id = :studentId
 order by form.dateCreated desc
 ''', [studentId: studentId], [offset: offset, max: max]
-    }
-
-    def formCount(String studentId) {
-        StudentLeaveForm.countByStudent(Student.load(studentId))
+        return [
+                forms: forms,
+                count: StudentLeaveForm.countByStudent(Student.load(studentId))
+        ]
     }
 
     def getFormInfo(Long id) {
@@ -312,20 +312,5 @@ where form.student.id = :studentId
         domainStateMachineHandler.finish(form, studentId, workitem.id)
 
         form.save()
-    }
-
-    def approvers(Long id) {
-        Student.executeQuery '''
-select new map(
-  checker.id as id,
-  checker.name as name
-)
-from Student s
-join s.adminClass ac
-join ac.counsellor checker
-where s = (
-  select student
-  from StudentLeaveForm
-  where id = :id )''', [id: id]
     }
 }

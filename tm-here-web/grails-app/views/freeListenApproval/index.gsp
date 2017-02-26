@@ -1,6 +1,6 @@
 <html>
 <head>
-    <meta name="layout" content="main" />
+    <meta name="layout" content="review"/>
     <title>免听审批</title>
     <asset:script src="/static/js/app/here/free-listen/approval.js"></asset:script>
 </head>

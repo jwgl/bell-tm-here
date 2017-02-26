@@ -1,16 +1,9 @@
 package cn.edu.bnuz.bell.here
 
-import cn.edu.bnuz.bell.http.BadRequestException
-import cn.edu.bnuz.bell.http.NotFoundException
+import cn.edu.bnuz.bell.organization.Teacher
 import cn.edu.bnuz.bell.security.User
 import cn.edu.bnuz.bell.tm.common.operation.ScheduleService
-import cn.edu.bnuz.bell.workflow.AbstractReviewService
-import cn.edu.bnuz.bell.workflow.Activities
-import cn.edu.bnuz.bell.workflow.DomainStateMachineHandler
-import cn.edu.bnuz.bell.workflow.State
-import cn.edu.bnuz.bell.workflow.WorkflowActivity
-import cn.edu.bnuz.bell.workflow.WorkflowInstance
-import cn.edu.bnuz.bell.workflow.Workitem
+import cn.edu.bnuz.bell.workflow.*
 import cn.edu.bnuz.bell.workflow.commands.AcceptCommand
 import cn.edu.bnuz.bell.workflow.commands.RejectCommand
 import grails.transaction.Transactional
@@ -18,7 +11,7 @@ import grails.transaction.Transactional
 import javax.annotation.Resource
 
 @Transactional
-class StudentLeaveApprovalService extends AbstractReviewService {
+class StudentLeaveApprovalService {
     StudentLeaveFormService studentLeaveFormService
     ScheduleService scheduleService
 
@@ -29,7 +22,7 @@ class StudentLeaveApprovalService extends AbstractReviewService {
      * 各状态申请数量
      * @return 各状态申请数量
      */
-    def getCountsByStatus(String userId) {
+    def getCounts(String userId) {
         def results = StudentLeaveForm.executeQuery '''
 select form.status, count(*)
 from StudentLeaveForm form
@@ -49,7 +42,7 @@ group by status
      * @return
      */
     def findAllByStatus(String userId, State status, int offset, int max) {
-        StudentLeaveForm.executeQuery '''
+        def forms = StudentLeaveForm.executeQuery '''
 select new map(
   form.id as id,
   student.id as studentId,
@@ -67,6 +60,8 @@ where form.status = :status
   and adminClass.counsellor.id = :userId 
 order by form.dateSubmitted desc
 ''', [userId: userId, status: status], [offset: offset, max: max]
+
+        return [forms: forms, counts: getCounts(userId)]
     }
 
     def getFormForReview(String userId, Long id) {
@@ -77,37 +72,28 @@ order by form.dateSubmitted desc
                 WorkflowActivity.load("${StudentLeaveForm.WORKFLOW_ID}.${Activities.APPROVE}"),
                 User.load(userId),
         )
-        if (workitem) {
-            form.workitemId = workitem.id
-        }
-
-        checkReviewer(id, Activities.APPROVE, userId)
+        domainStateMachineHandler.checkReviewer(id, userId, Activities.APPROVE)
 
         def schedules = scheduleService.getStudentSchedules(form.studentId, form.term)
-
         return [
-                schedules: schedules,
                 form: form,
+                schedules: schedules,
+                counts: getCounts(userId),
+                workitemId: workitem ? workitem.id : null,
         ]
     }
 
     def getFormForReview(String userId, Long id, UUID workitemId) {
         def form = studentLeaveFormService.getFormInfo(id)
 
-        def workitem = Workitem.get(workitemId)
-        if (!workitem ||
-            workitem.instance.id != form.workflowInstanceId ||
-            workitem.to.id != userId) {
-            throw new BadRequestException()
-        }
-
-        checkReviewer(id, workitem.activitySuffix, userId)
+        def activity = Workitem.get(workitemId).activitySuffix
+        domainStateMachineHandler.checkReviewer(id, userId, activity)
 
         def schedules = scheduleService.getStudentSchedules(form.studentId, form.term)
-
         return [
-                schedules: schedules,
                 form: form,
+                schedules: schedules,
+                counts: getCounts(userId),
         ]
     }
 
@@ -119,20 +105,9 @@ order by form.dateSubmitted desc
      */
     void accept(String userId, AcceptCommand cmd, UUID workitemId) {
         StudentLeaveForm form = StudentLeaveForm.get(cmd.id)
-
-        if (!form) {
-            throw new NotFoundException()
-        }
-
-        if (!domainStateMachineHandler.canAccept(form)) {
-            throw new BadRequestException()
-        }
-
-        def activity = Workitem.get(workitemId).activitySuffix
-        checkReviewer(cmd.id, activity, userId)
-
-        domainStateMachineHandler.accept(form, userId, cmd.comment, workitemId, form.student.id)
-
+        domainStateMachineHandler.accept(form, userId, Activities.APPROVE, cmd.comment, workitemId, form.student.id)
+        form.approver = Teacher.load(userId)
+        form.dateApproved = new Date()
         form.save()
     }
 
@@ -144,29 +119,9 @@ order by form.dateSubmitted desc
      */
     void reject(String userId, RejectCommand cmd, UUID workitemId) {
         StudentLeaveForm form = StudentLeaveForm.get(cmd.id)
-
-        if (!form) {
-            throw new NotFoundException()
-        }
-
-        if (!domainStateMachineHandler.canReject(form)) {
-            throw new BadRequestException()
-        }
-
-        def activity = Workitem.get(workitemId).activitySuffix
-        checkReviewer(cmd.id, activity, userId)
-
-        domainStateMachineHandler.reject(form, userId, cmd.comment, workitemId)
-
+        domainStateMachineHandler.reject(form, userId, Activities.APPROVE, cmd.comment, workitemId)
+        form.approver = Teacher.load(userId)
+        form.dateApproved = new Date()
         form.save()
-    }
-
-    List<Map> getReviewers(String type, Long id) {
-        switch (type) {
-            case Activities.APPROVE:
-                return studentLeaveFormService.approvers(id)
-            default:
-                throw new BadRequestException()
-        }
     }
 }

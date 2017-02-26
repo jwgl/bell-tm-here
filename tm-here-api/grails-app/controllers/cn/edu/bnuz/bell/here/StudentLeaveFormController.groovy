@@ -8,16 +8,12 @@ import org.springframework.security.access.prepost.PreAuthorize
 @PreAuthorize('hasAuthority("PERM_STUDENT_LEAVE_WRITE")')
 class StudentLeaveFormController implements ServiceExceptionHandler {
     StudentLeaveFormService studentLeaveFormService
+    StudentLeaveReviewerService studentLeaveReviewerService
 
     def index(String studentId) {
         def offset = params.int('offset') ?: 0
         def max = params.int('max') ?: 10
-        def count = studentLeaveFormService.formCount(studentId)
-        def forms = studentLeaveFormService.list(studentId, offset, max)
-        renderJson([
-                count: count,
-                forms: forms,
-        ])
+        renderJson studentLeaveFormService.list(studentId, offset, max)
     }
 
     def show(String studentId, Long id) {
@@ -69,6 +65,6 @@ class StudentLeaveFormController implements ServiceExceptionHandler {
     }
 
     def approvers(Long studentLeaveFormId) {
-        renderJson studentLeaveFormService.approvers(studentLeaveFormId)
+        renderJson studentLeaveReviewerService.getApprovers(studentLeaveFormId)
     }
 }

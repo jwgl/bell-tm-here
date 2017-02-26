@@ -8,22 +8,13 @@ import org.springframework.security.access.prepost.PreAuthorize
 @PreAuthorize('hasAuthority("PERM_FREE_LISTEN_WRITE")')
 class FreeListenFormController implements ServiceExceptionHandler {
     FreeListenFormService freeListenFormService
+    FreeListenReviewerService freeListenReviewerService
 
     def index(String studentId) {
         def offset = params.int('offset') ?: 0
         def max = params.int('max') ?: 10
-        def count = freeListenFormService.formCount(studentId)
-        def forms = freeListenFormService.list(studentId, offset, max)
-        def config = freeListenFormService.getDateConfig()
-        def notice = freeListenFormService.getNotice()
-        renderJson([
-                count: count,
-                forms: forms,
-                config: config,
-                notice: notice,
-        ])
+        renderJson freeListenFormService.list(studentId, offset, max)
     }
-
 
     def show(String studentId, Long id) {
         renderJson freeListenFormService.getFormForShow(studentId, id)
@@ -71,6 +62,6 @@ class FreeListenFormController implements ServiceExceptionHandler {
     }
 
     def checkers(Long freeListenFormId) {
-        renderJson freeListenFormService.getCheckers(freeListenFormId)
+        renderJson freeListenReviewerService.getCheckers(freeListenFormId)
     }
 }

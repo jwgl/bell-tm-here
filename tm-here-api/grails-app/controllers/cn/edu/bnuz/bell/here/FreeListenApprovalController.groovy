@@ -17,23 +17,16 @@ class FreeListenApprovalController implements ServiceExceptionHandler{
         def offset = params.int("offset") ?: 0
         def max = params.int("max") ?: (params.int("offset") ? 20 : Integer.MAX_VALUE)
 
-        def counts = freeListenApprovalService.getCounts(approverId)
-        def forms
         switch (status) {
             case 'PENDING':
-                forms = freeListenApprovalService.findPendingForms(approverId, offset, max)
-                break
+                return renderJson(freeListenApprovalService.findPendingForms(approverId, offset, max))
             case 'PROCESSED':
-                forms = freeListenApprovalService.findProcessedForms(approverId, offset, max)
-                break
+                return renderJson(freeListenApprovalService.findProcessedForms(approverId, offset, max))
             case 'UNCHECKED':
-                forms = freeListenApprovalService.findUncheckedForms(approverId, offset, max)
-                break
+                return renderJson(freeListenApprovalService.findUncheckedForms(approverId, offset, max))
             default:
                 throw new BadRequestException()
         }
-
-        renderJson([counts: counts, forms: forms])
     }
 
     def show(String approverId, Long freeListenApprovalId, String id) {

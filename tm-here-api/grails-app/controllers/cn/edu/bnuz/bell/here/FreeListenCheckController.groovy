@@ -11,26 +11,21 @@ import org.springframework.security.access.prepost.PreAuthorize
 @PreAuthorize('hasAuthority("PERM_FREE_LISTEN_CHECK")')
 class FreeListenCheckController implements ServiceExceptionHandler {
 	FreeListenCheckService freeListenCheckService
+    FreeListenReviewerService freeListenReviewerService
 
     def index(String teacherId) {
         def status = params.status
         def offset = params.int("offset") ?: 0
         def max = params.int("max") ?: (params.int("offset") ? 20 : Integer.MAX_VALUE)
 
-        def counts = freeListenCheckService.getCounts(teacherId)
-        def forms
         switch (status) {
             case 'PENDING':
-                forms = freeListenCheckService.findPendingForms(teacherId, offset, max)
-                break
+                return renderJson(freeListenCheckService.findPendingForms(teacherId, offset, max))
             case 'PROCESSED':
-                forms = freeListenCheckService.findProcessedForms(teacherId, offset, max)
-                break
+                return renderJson(freeListenCheckService.findProcessedForms(teacherId, offset, max))
             default:
                 throw new BadRequestException()
         }
-
-        renderJson([counts: counts, forms: forms])
     }
 
     def show(String teacherId, Long freeListenCheckId, String id) {
@@ -64,6 +59,6 @@ class FreeListenCheckController implements ServiceExceptionHandler {
     }
 
     def approvers(String teacherId, Long freeListenCheckId) {
-        renderJson freeListenCheckService.getApprovers()
+        renderJson freeListenReviewerService.getApprovers()
     }
 }
