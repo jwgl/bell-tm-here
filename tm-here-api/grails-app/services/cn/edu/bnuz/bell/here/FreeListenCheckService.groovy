@@ -1,12 +1,8 @@
 package cn.edu.bnuz.bell.here
 
-import cn.edu.bnuz.bell.http.BadRequestException
-import cn.edu.bnuz.bell.http.NotFoundException
 import cn.edu.bnuz.bell.organization.Teacher
 import cn.edu.bnuz.bell.security.User
-import cn.edu.bnuz.bell.service.DataAccessService
 import cn.edu.bnuz.bell.tm.common.operation.ScheduleService
-import cn.edu.bnuz.bell.workflow.AbstractReviewService
 import cn.edu.bnuz.bell.workflow.Activities
 import cn.edu.bnuz.bell.workflow.DomainStateMachineHandler
 import cn.edu.bnuz.bell.workflow.State
@@ -20,27 +16,16 @@ import grails.transaction.Transactional
 import javax.annotation.Resource
 
 @Transactional
-class FreeListenCheckService extends AbstractReviewService {
+class FreeListenCheckService {
     FreeListenFormService freeListenFormService
     ScheduleService scheduleService
-    DataAccessService dataAccessService
 
     @Resource(name='freeListenFormStateHandler')
     DomainStateMachineHandler domainStateMachineHandler
 
     def getCounts(String teacherId) {
-        def pending = dataAccessService.getInteger '''
-select count(*)
-from FreeListenForm form
-where form.checker.id = :teacherId
-and form.status = :status
-''',[teacherId: teacherId, status: State.SUBMITTED]
-        def processed = dataAccessService.getInteger '''
-select count(*)
-from FreeListenForm form
-where form.checker.id = :teacherId
-and form.dateChecked is not null
-''',[teacherId: teacherId]
+        def pending = FreeListenForm.countByCheckerAndStatus(Teacher.load(teacherId), State.SUBMITTED)
+        def processed = FreeListenForm.countByCheckerAndStatusNotEqual(Teacher.load(teacherId,), State.SUBMITTED)
         return [
                 PENDING: pending,
                 PROCESSED: processed,
@@ -48,7 +33,7 @@ and form.dateChecked is not null
     }
 
     def findPendingForms(String teacherId, int offset, int max) {
-        FreeListenForm.executeQuery '''
+        def forms = FreeListenForm.executeQuery '''
 select new map(
   form.id as id,
   student.id as studentId,
@@ -67,10 +52,12 @@ where form.checker.id = :teacherId
 and form.status = :status
 order by form.dateSubmitted
 ''',[teacherId: teacherId, status: State.SUBMITTED], [offset: offset, max: max]
+
+        return [forms: forms, counts: getCounts(teacherId)]
     }
 
     def findProcessedForms(String teacherId, int offset, int max) {
-        FreeListenForm.executeQuery '''
+        def forms = FreeListenForm.executeQuery '''
 select new map(
   form.id as id,
   student.id as studentId,
@@ -89,6 +76,8 @@ where form.checker.id = :teacherId
 and form.dateChecked is not null
 order by form.dateChecked desc
 ''',[teacherId: teacherId], [offset: offset, max: max]
+
+        return [forms: forms, counts: getCounts(teacherId)]
     }
 
     def getFormForReview(String teacherId, Long id, String activity) {
@@ -99,10 +88,7 @@ order by form.dateChecked desc
                 WorkflowActivity.load("${FreeListenForm.WORKFLOW_ID}.${activity}"),
                 User.load(teacherId),
         )
-        if (workitem) {
-            form.workitemId = workitem.id
-        }
-        checkReviewer(id, activity, teacherId)
+        domainStateMachineHandler.checkReviewer(id, teacherId, activity)
 
         def studentSchedules = scheduleService.getStudentSchedules(form.studentId, form.term)
         def departmentSchedules = freeListenFormService.findDepartmentOtherSchedules(form.id)
@@ -110,6 +96,8 @@ order by form.dateChecked desc
                 form: form,
                 studentSchedules: studentSchedules,
                 departmentSchedules: departmentSchedules,
+                counts: getCounts(teacherId),
+                workitemId: workitem ? workitem.id : null,
         ]
     }
 
@@ -117,7 +105,7 @@ order by form.dateChecked desc
         def form = freeListenFormService.getFormInfo(id)
 
         def activity = Workitem.get(workitemId).activitySuffix
-        checkReviewer(id, activity, teacherId)
+        domainStateMachineHandler.checkReviewer(id, teacherId, activity)
 
         def studentSchedules = scheduleService.getStudentSchedules(form.studentId, form.term)
         def departmentSchedules = freeListenFormService.findDepartmentOtherSchedules(form.id)
@@ -125,69 +113,23 @@ order by form.dateChecked desc
                 form: form,
                 studentSchedules: studentSchedules,
                 departmentSchedules: departmentSchedules,
+                counts: getCounts(teacherId),
         ]
     }
 
     void accept(AcceptCommand cmd, String teacherId, UUID workitemId) {
         FreeListenForm form = FreeListenForm.get(cmd.id)
-
-        if (!form) {
-            throw new NotFoundException()
-        }
-
-        if (!domainStateMachineHandler.canAccept(form)) {
-            throw new BadRequestException()
-        }
-
-        def workitem = Workitem.get(workitemId)
-        def activity = workitem.activitySuffix
-        if (activity != Activities.CHECK ||  workitem.dateProcessed || workitem.to.id != teacherId ) {
-            throw new BadRequestException()
-        }
-
-        checkReviewer(cmd.id, activity, teacherId)
-
-        form.checker = Teacher.load(teacherId)
+        domainStateMachineHandler.accept(form, teacherId, Activities.CHECK, cmd.comment, workitemId, cmd.to)
+        // checker is set in form
         form.dateChecked = new Date()
-
-        domainStateMachineHandler.accept(form, teacherId, cmd.comment, workitemId, cmd.to)
-
         form.save()
     }
 
     void reject(RejectCommand cmd, String teacherId, UUID workitemId) {
         FreeListenForm form = FreeListenForm.get(cmd.id)
-
-        if (!form) {
-            throw new NotFoundException()
-        }
-
-        if (!domainStateMachineHandler.canReject(form)) {
-            throw new BadRequestException()
-        }
-
-        def activity = Workitem.get(workitemId).activitySuffix
-
-        checkReviewer(cmd.id, activity, teacherId)
-
-        domainStateMachineHandler.reject(form, teacherId, cmd.comment, workitemId)
-
+        domainStateMachineHandler.reject(form, teacherId, Activities.CHECK, cmd.comment, workitemId)
+        // checker is set in form
+        form.dateChecked = new Date()
         form.save()
-    }
-
-    @Override
-    List<Map> getReviewers(String activity, Long id) {
-        switch (activity) {
-            case Activities.CHECK:
-                return freeListenFormService.getCheckers(id)
-            case Activities.APPROVE:
-                return getApprovers()
-            default:
-                throw new BadRequestException()
-        }
-    }
-
-    def getApprovers() {
-        User.findAllWithPermission('PERM_FREE_LISTEN_APPROVE')
     }
 }

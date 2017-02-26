@@ -26,7 +26,7 @@ class FreeListenFormService {
     DomainStateMachineHandler domainStateMachineHandler
 
     def list(String studentId, Integer offset, Integer max) {
-        FreeListenForm.executeQuery '''
+        def forms = FreeListenForm.executeQuery '''
 select new map(
   form.id as id,
   form.reason as reason,
@@ -37,10 +37,13 @@ from FreeListenForm form
 where form.student.id = :studentId
 order by form.dateCreated desc
 ''', [studentId: studentId], [offset: offset, max: max]
-    }
 
-    def formCount(String studentId) {
-        FreeListenForm.countByStudent(Student.load(studentId))
+        return [
+                forms: forms,
+                count: FreeListenForm.countByStudent(Student.load(studentId)),
+                config: getDateConfig(),
+                notice: systemConfigService.getString(FreeListenForm.CONFIG_NOTICE),
+        ]
     }
 
     def getDateConfig() {
@@ -49,10 +52,6 @@ order by form.dateCreated desc
                 endDate: systemConfigService.getDate(FreeListenForm.CONFIG_END_DATE),
                 today: LocalDate.now(),
         ]
-    }
-
-    def getNotice() {
-        systemConfigService.getString(FreeListenForm.CONFIG_NOTICE)
     }
 
     def getFormInfo(Long id) {
@@ -385,18 +384,6 @@ where (courseClass.term.id,
 
         form.dateSubmitted = new Date()
         form.save()
-    }
-
-    List getCheckers(Long id) {
-        FreeListenForm.executeQuery '''
-select new map (
-  checker.id as id,
-  checker.name as name
-)
-from FreeListenForm form
-join form.checker checker
-where form.id = :id
-''', [id: id]
     }
 
     def checkOpeningDate() {

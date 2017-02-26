@@ -1,20 +1,18 @@
 package cn.edu.bnuz.bell.here
 
-import cn.edu.bnuz.bell.http.BadRequestException
-import cn.edu.bnuz.bell.http.NotFoundException
 import cn.edu.bnuz.bell.organization.Teacher
 import cn.edu.bnuz.bell.workflow.Activities
 import cn.edu.bnuz.bell.workflow.State
-import cn.edu.bnuz.bell.workflow.Workitem
 import cn.edu.bnuz.bell.workflow.commands.AcceptCommand
+import cn.edu.bnuz.bell.workflow.commands.RejectCommand
 import grails.transaction.Transactional
 
 @Transactional
 class FreeListenApprovalService extends FreeListenCheckService {
-    def getCounts(String teacherId) {
+    def getCounts(String userId) {
         def unchecked = FreeListenForm.countByStatus(State.SUBMITTED)
         def pending = FreeListenForm.countByStatus(State.CHECKED)
-        def processed = FreeListenForm.countByApprover(Teacher.load(teacherId))
+        def processed = FreeListenForm.countByApprover(Teacher.load(userId))
         return [
                 UNCHECKED: unchecked,
                 PENDING: pending,
@@ -22,8 +20,8 @@ class FreeListenApprovalService extends FreeListenCheckService {
         ]
     }
 
-    def findUncheckedForms(String teacherId, int offset, int max) {
-        FreeListenForm.executeQuery '''
+    def findUncheckedForms(String userId, int offset, int max) {
+        def forms = FreeListenForm.executeQuery '''
 select new map(
   form.id as id,
   student.id as studentId,
@@ -41,10 +39,11 @@ join major.subject subject
 where form.status = :status
 order by form.dateSubmitted
 ''',[status: State.SUBMITTED], [offset: offset, max: max]
+        return [forms: forms, counts: getCounts(userId)]
     }
 
-    def findPendingForms(String teacherId, int offset, int max) {
-        FreeListenForm.executeQuery '''
+    def findPendingForms(String userId, int offset, int max) {
+        def forms = FreeListenForm.executeQuery '''
 select new map(
   form.id as id,
   student.id as studentId,
@@ -62,10 +61,12 @@ join major.subject subject
 where form.status = :status
 order by form.dateChecked
 ''',[status: State.CHECKED], [offset: offset, max: max]
+
+        return [forms: forms, counts: getCounts(userId)]
     }
 
     def findProcessedForms(String userId, int offset, int max) {
-        FreeListenForm.executeQuery '''
+        def forms = FreeListenForm.executeQuery '''
 select new map(
   form.id as id,
   student.id as studentId,
@@ -80,40 +81,26 @@ from FreeListenForm form
 join form.student student
 join student.major major
 join major.subject subject
-where exists (
-  from Workitem workitem
-  where workitem.instance = form.workflowInstance
-  and workitem.activity.id = :activityId
-  and workitem.dateProcessed is not null
-)
+where form.approver.id = :approverId
 order by form.dateApproved desc
-''',[activityId: "${FreeListenForm.WORKFLOW_ID}.${Activities.APPROVE}"], [offset: offset, max: max]
+''',[approverId: userId], [offset: offset, max: max]
+
+        return [forms: forms, counts: getCounts(userId)]
     }
 
     void accept(AcceptCommand cmd, String userId, UUID workitemId) {
         FreeListenForm form = FreeListenForm.get(cmd.id)
-
-        if (!form) {
-            throw new NotFoundException()
-        }
-
-        if (!domainStateMachineHandler.canAccept(form)) {
-            throw new BadRequestException()
-        }
-
-        def workitem = Workitem.get(workitemId)
-        def activity = workitem.activitySuffix
-        if (activity != Activities.APPROVE ||  workitem.dateProcessed || workitem.to.id != userId ) {
-            throw new BadRequestException()
-        }
-
-        checkReviewer(cmd.id, activity, userId)
-
+        domainStateMachineHandler.accept(form, userId, Activities.APPROVE, cmd.comment, workitemId, cmd.to)
         form.approver = Teacher.load(userId)
         form.dateApproved = new Date()
+        form.save()
+    }
 
-        domainStateMachineHandler.accept(form, userId, cmd.comment, workitemId, cmd.to)
-
+    void reject(RejectCommand cmd, String userId, UUID workitemId) {
+        FreeListenForm form = FreeListenForm.get(cmd.id)
+        domainStateMachineHandler.reject(form, userId, Activities.APPROVE, cmd.comment, workitemId)
+        form.approver = Teacher.load(userId)
+        form.dateApproved = new Date()
         form.save()
     }
 }

@@ -16,9 +16,7 @@ class StudentLeaveApprovalController implements ServiceExceptionHandler {
         def status = State.valueOf(params.status as String)
         def offset = params.int("offset") ?: 0
         def max = params.int("max") ?: (params.int("offset") ? 20 : Integer.MAX_VALUE)
-        def forms = studentLeaveApprovalService.findAllByStatus(approverId, status, offset, max)
-        def counts = studentLeaveApprovalService.getCountsByStatus(approverId)
-        renderJson([counts: counts, forms: forms])
+        renderJson studentLeaveApprovalService.findAllByStatus(approverId, status, offset, max)
     }
 
     def show(String approverId, Long studentLeaveApprovalId, String id) {

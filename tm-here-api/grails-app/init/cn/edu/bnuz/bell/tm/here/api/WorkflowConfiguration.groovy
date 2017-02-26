@@ -1,5 +1,7 @@
 package cn.edu.bnuz.bell.tm.here.api
 
+import cn.edu.bnuz.bell.here.FreeListenReviewerService
+import cn.edu.bnuz.bell.here.StudentLeaveReviewerService
 import cn.edu.bnuz.bell.workflow.DomainStateMachineHandler
 import cn.edu.bnuz.bell.workflow.Event
 import cn.edu.bnuz.bell.workflow.State
@@ -20,22 +22,21 @@ import org.springframework.statemachine.persist.StateMachinePersister
         DefaultStateMachinePersistConfiguration,
 ])
 class WorkflowConfiguration {
-    @Bean('studentLeaveFormStateHandler')
-    DomainStateMachineHandler studentLeaveFormStateHandler(
-            @Qualifier('studentLeaveFormsStateMachine')
-            StateMachine<State, Event> stateMachine,
-            StateMachinePersister<State, Event, StateObject> persister
-    ) {
-        new DomainStateMachineHandler(stateMachine, persister)
-    }
-
     @Bean('freeListenFormStateHandler')
     DomainStateMachineHandler freeListenFormStateHandler(
             @Qualifier('defaultStateMachine')
             StateMachine<State, Event> stateMachine,
-            StateMachinePersister<State, Event, StateObject> persister
-    ) {
-        new DomainStateMachineHandler(stateMachine, persister)
+            StateMachinePersister<State, Event, StateObject> persister,
+            FreeListenReviewerService reviewerService) {
+        new DomainStateMachineHandler(stateMachine, persister, reviewerService)
     }
 
+    @Bean('studentLeaveFormStateHandler')
+    DomainStateMachineHandler studentLeaveFormStateHandler(
+            @Qualifier('studentLeaveFormsStateMachine')
+            StateMachine<State, Event> stateMachine,
+            StateMachinePersister<State, Event, StateObject> persister,
+            StudentLeaveReviewerService reviewerService) {
+        new DomainStateMachineHandler(stateMachine, persister, reviewerService)
+    }
 }
