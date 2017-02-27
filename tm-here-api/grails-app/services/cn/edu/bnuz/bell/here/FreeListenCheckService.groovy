@@ -25,7 +25,7 @@ class FreeListenCheckService {
 
     def getCounts(String teacherId) {
         def pending = FreeListenForm.countByCheckerAndStatus(Teacher.load(teacherId), State.SUBMITTED)
-        def processed = FreeListenForm.countByCheckerAndStatusNotEqual(Teacher.load(teacherId,), State.SUBMITTED)
+        def processed = FreeListenForm.countByCheckerAndStatusNotEqualAndDateCheckedIsNotNull(Teacher.load(teacherId,), State.SUBMITTED)
         return [
                 PENDING: pending,
                 PROCESSED: processed,
@@ -74,8 +74,9 @@ join student.major major
 join major.subject subject
 where form.checker.id = :teacherId
 and form.dateChecked is not null
+and form.status <> :status
 order by form.dateChecked desc
-''',[teacherId: teacherId], [offset: offset, max: max]
+''',[teacherId: teacherId, status: State.SUBMITTED], [offset: offset, max: max]
 
         return [forms: forms, counts: getCounts(teacherId)]
     }
