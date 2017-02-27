@@ -3,6 +3,7 @@ package cn.edu.bnuz.bell.here
 import cn.edu.bnuz.bell.http.BadRequestException
 import cn.edu.bnuz.bell.http.ServiceExceptionHandler
 import cn.edu.bnuz.bell.workflow.Event
+import cn.edu.bnuz.bell.workflow.ListCommand
 import cn.edu.bnuz.bell.workflow.State
 import cn.edu.bnuz.bell.workflow.commands.AcceptCommand
 import cn.edu.bnuz.bell.workflow.commands.RejectCommand
@@ -12,11 +13,8 @@ import org.springframework.security.access.prepost.PreAuthorize
 class StudentLeaveApprovalController implements ServiceExceptionHandler {
     StudentLeaveApprovalService studentLeaveApprovalService
 
-    def index(String approverId) {
-        def status = State.valueOf(params.status as String)
-        def offset = params.int("offset") ?: 0
-        def max = params.int("max") ?: (params.int("offset") ? 20 : Integer.MAX_VALUE)
-        renderJson studentLeaveApprovalService.findAllByStatus(approverId, status, offset, max)
+    def index(String approverId, ListCommand cmd) {
+        renderJson studentLeaveApprovalService.list(approverId, cmd)
     }
 
     def show(String approverId, Long studentLeaveApprovalId, String id) {

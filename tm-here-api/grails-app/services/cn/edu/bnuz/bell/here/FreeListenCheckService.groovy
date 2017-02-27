@@ -1,10 +1,13 @@
 package cn.edu.bnuz.bell.here
 
+import cn.edu.bnuz.bell.http.BadRequestException
 import cn.edu.bnuz.bell.organization.Teacher
 import cn.edu.bnuz.bell.security.User
 import cn.edu.bnuz.bell.tm.common.operation.ScheduleService
 import cn.edu.bnuz.bell.workflow.Activities
 import cn.edu.bnuz.bell.workflow.DomainStateMachineHandler
+import cn.edu.bnuz.bell.workflow.ListCommand
+import cn.edu.bnuz.bell.workflow.ListType
 import cn.edu.bnuz.bell.workflow.State
 import cn.edu.bnuz.bell.workflow.WorkflowActivity
 import cn.edu.bnuz.bell.workflow.WorkflowInstance
@@ -24,15 +27,28 @@ class FreeListenCheckService {
     DomainStateMachineHandler domainStateMachineHandler
 
     def getCounts(String teacherId) {
-        def pending = FreeListenForm.countByCheckerAndStatus(Teacher.load(teacherId), State.SUBMITTED)
-        def processed = FreeListenForm.countByCheckerAndStatusNotEqualAndDateCheckedIsNotNull(Teacher.load(teacherId,), State.SUBMITTED)
-        return [
-                PENDING: pending,
-                PROCESSED: processed,
+        def teacher = Teacher.load(teacherId)
+        def todo = FreeListenForm.countByCheckerAndStatus(teacher, State.SUBMITTED)
+        def done = FreeListenForm.countByCheckerAndStatusNotEqualAndDateCheckedIsNotNull(teacher, State.SUBMITTED)
+
+        [
+                (ListType.TODO): todo,
+                (ListType.DONE): done,
         ]
     }
 
-    def findPendingForms(String teacherId, int offset, int max) {
+    def list(String userId, ListCommand cmd) {
+        switch (cmd.type) {
+            case ListType.TODO:
+                return findTodoList(userId, cmd.args)
+            case ListType.DONE:
+                return findDoneList(userId, cmd.args)
+            default:
+                throw new BadRequestException()
+        }
+    }
+
+    def findTodoList(String teacherId, Map args) {
         def forms = FreeListenForm.executeQuery '''
 select new map(
   form.id as id,
@@ -51,12 +67,12 @@ join major.subject subject
 where form.checker.id = :teacherId
 and form.status = :status
 order by form.dateSubmitted
-''',[teacherId: teacherId, status: State.SUBMITTED], [offset: offset, max: max]
+''',[teacherId: teacherId, status: State.SUBMITTED], args
 
         return [forms: forms, counts: getCounts(teacherId)]
     }
 
-    def findProcessedForms(String teacherId, int offset, int max) {
+    def findDoneList(String teacherId, Map args) {
         def forms = FreeListenForm.executeQuery '''
 select new map(
   form.id as id,
@@ -76,7 +92,7 @@ where form.checker.id = :teacherId
 and form.dateChecked is not null
 and form.status <> :status
 order by form.dateChecked desc
-''',[teacherId: teacherId, status: State.SUBMITTED], [offset: offset, max: max]
+''',[teacherId: teacherId, status: State.SUBMITTED], args
 
         return [forms: forms, counts: getCounts(teacherId)]
     }
@@ -115,6 +131,7 @@ order by form.dateChecked desc
                 studentSchedules: studentSchedules,
                 departmentSchedules: departmentSchedules,
                 counts: getCounts(teacherId),
+                workitemId: workitemId,
         ]
     }
 

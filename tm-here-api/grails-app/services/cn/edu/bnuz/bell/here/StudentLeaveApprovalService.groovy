@@ -1,10 +1,13 @@
 package cn.edu.bnuz.bell.here
 
+import cn.edu.bnuz.bell.http.BadRequestException
 import cn.edu.bnuz.bell.organization.Teacher
 import cn.edu.bnuz.bell.security.User
 import cn.edu.bnuz.bell.tm.common.operation.ScheduleService
 import cn.edu.bnuz.bell.workflow.Activities
 import cn.edu.bnuz.bell.workflow.DomainStateMachineHandler
+import cn.edu.bnuz.bell.workflow.ListCommand
+import cn.edu.bnuz.bell.workflow.ListType
 import cn.edu.bnuz.bell.workflow.State
 import cn.edu.bnuz.bell.workflow.WorkflowActivity
 import cn.edu.bnuz.bell.workflow.WorkflowInstance
@@ -36,17 +39,32 @@ join student.adminClass adminClass
 where adminClass.counsellor.id = :userId
 group by status
 ''', [userId: userId]
-        return results.collectEntries {[it[0].name(), it[1]]}
+        def map = results.collectEntries {[it[0], it[1]]}
+
+        [
+                (ListType.TODO): map[State.SUBMITTED],
+                (ListType.DONE): map[State.APPROVED],
+                (ListType.NEXT): map[State.FINISHED],
+        ]
+    }
+
+    def list(String userId, ListCommand cmd) {
+        switch (cmd.type) {
+            case ListType.TODO:
+                return list(userId, State.SUBMITTED, cmd.args)
+            case ListType.DONE:
+                return list(userId, State.APPROVED, cmd.args)
+            case ListType.NEXT:
+                return list(userId, State.FINISHED, cmd.args)
+            default:
+                throw new BadRequestException()
+        }
     }
 
     /**
      * 查找所有指定状态的申请（DTO）
-     * @param status
-     * @param offset
-     * @param max
-     * @return
      */
-    def findAllByStatus(String userId, State status, int offset, int max) {
+    def list(String userId, State status, Map args) {
         def forms = StudentLeaveForm.executeQuery '''
 select new map(
   form.id as id,
@@ -64,7 +82,7 @@ join student.adminClass adminClass
 where form.status = :status
   and adminClass.counsellor.id = :userId 
 order by form.dateSubmitted desc
-''', [userId: userId, status: status], [offset: offset, max: max]
+''', [userId: userId, status: status], args
 
         return [forms: forms, counts: getCounts(userId)]
     }
@@ -99,6 +117,7 @@ order by form.dateSubmitted desc
                 form: form,
                 schedules: schedules,
                 counts: getCounts(userId),
+                workitemId: workitemId,
         ]
     }
 
