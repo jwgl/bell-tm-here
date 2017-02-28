@@ -5,6 +5,7 @@ import cn.edu.bnuz.bell.http.ServiceExceptionHandler
 import cn.edu.bnuz.bell.workflow.Activities
 import cn.edu.bnuz.bell.workflow.Event
 import cn.edu.bnuz.bell.workflow.ListCommand
+import cn.edu.bnuz.bell.workflow.ListType
 import cn.edu.bnuz.bell.workflow.commands.AcceptCommand
 import cn.edu.bnuz.bell.workflow.commands.RejectCommand
 import org.springframework.security.access.prepost.PreAuthorize
@@ -18,11 +19,12 @@ class FreeListenCheckController implements ServiceExceptionHandler {
         renderJson freeListenCheckService.list(teacherId, cmd)
     }
 
-    def show(String teacherId, Long freeListenCheckId, String id) {
+    def show(String teacherId, Long freeListenCheckId, String id, String type) {
+        ListType listType = ListType.valueOf(type)
         if (id == 'undefined') {
-            renderJson freeListenCheckService.getFormForReview(teacherId, freeListenCheckId, Activities.CHECK)
+            renderJson freeListenCheckService.getFormForReview(teacherId, freeListenCheckId, listType, Activities.CHECK)
         } else {
-            renderJson freeListenCheckService.getFormForReview(teacherId, freeListenCheckId, UUID.fromString(id))
+            renderJson freeListenCheckService.getFormForReview(teacherId, freeListenCheckId, listType, UUID.fromString(id))
         }
     }
 
@@ -45,7 +47,7 @@ class FreeListenCheckController implements ServiceExceptionHandler {
                 throw new BadRequestException()
         }
 
-        show(teacherId, freeListenCheckId, id)
+        show(teacherId, freeListenCheckId, id, 'todo')
     }
 
     def approvers(String teacherId, Long freeListenCheckId) {

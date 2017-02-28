@@ -3,6 +3,7 @@ package cn.edu.bnuz.bell.here
 import cn.edu.bnuz.bell.http.BadRequestException
 import cn.edu.bnuz.bell.organization.Teacher
 import cn.edu.bnuz.bell.security.User
+import cn.edu.bnuz.bell.service.DataAccessService
 import cn.edu.bnuz.bell.tm.common.operation.ScheduleService
 import cn.edu.bnuz.bell.workflow.Activities
 import cn.edu.bnuz.bell.workflow.DomainStateMachineHandler
@@ -22,6 +23,7 @@ import javax.annotation.Resource
 class StudentLeaveApprovalService {
     StudentLeaveFormService studentLeaveFormService
     ScheduleService scheduleService
+    DataAccessService dataAccessService
 
     @Resource(name='studentLeaveFormStateHandler')
     DomainStateMachineHandler domainStateMachineHandler
@@ -31,40 +33,53 @@ class StudentLeaveApprovalService {
      * @return 各状态申请数量
      */
     def getCounts(String userId) {
-        def results = StudentLeaveForm.executeQuery '''
-select form.status, count(*)
+        def todo = dataAccessService.getLong '''
+select count(*)
 from StudentLeaveForm form
 join form.student student
 join student.adminClass adminClass
-where adminClass.counsellor.id = :userId
-group by status
+where form.status = :status
+  and adminClass.counsellor.id = :userId
+''', [userId: userId, status: State.SUBMITTED]
+
+        def done = dataAccessService.getLong '''
+select count(*)
+from StudentLeaveForm form
+join form.student student
+join student.adminClass adminClass
+where form.approver.id = :userId
 ''', [userId: userId]
-        def map = results.collectEntries {[it[0], it[1]]}
+
+        def next = dataAccessService.getLong '''
+select count(*)
+from StudentLeaveForm form
+join form.student student
+join student.adminClass adminClass
+where form.status = :status
+  and form.approver.id = :userId
+''', [userId: userId, status: State.FINISHED]
 
         [
-                (ListType.TODO): map[State.SUBMITTED],
-                (ListType.DONE): map[State.APPROVED],
-                (ListType.NEXT): map[State.FINISHED],
+                (ListType.TODO): todo,
+                (ListType.DONE): done,
+                (ListType.NEXT): next,
         ]
     }
 
     def list(String userId, ListCommand cmd) {
         switch (cmd.type) {
             case ListType.TODO:
-                return list(userId, State.SUBMITTED, cmd.args)
+                return findTodoList(userId, cmd.args)
             case ListType.DONE:
-                return list(userId, State.APPROVED, cmd.args)
+                return findDoneList(userId, cmd.args)
             case ListType.NEXT:
-                return list(userId, State.FINISHED, cmd.args)
+                return findNextList(userId, cmd.args)
             default:
                 throw new BadRequestException()
         }
     }
 
-    /**
-     * 查找所有指定状态的申请（DTO）
-     */
-    def list(String userId, State status, Map args) {
+    def findTodoList(String userId, Map args) {
         def forms = StudentLeaveForm.executeQuery '''
 select new map(
   form.id as id,
@@ -73,21 +88,66 @@ select new map(
   adminClass.name as adminClass,
   form.type as type,
   substring(form.reason, 1, 20) as reason,
-  form.dateModified as applyDate,
+  form.dateSubmitted as date,
   form.status as status
 )
 from StudentLeaveForm form
 join form.student student
 join student.adminClass adminClass
 where form.status = :status
-  and adminClass.counsellor.id = :userId 
-order by form.dateSubmitted desc
-''', [userId: userId, status: status], args
+  and adminClass.counsellor.id = :userId
+order by form.dateSubmitted
+''', [userId: userId, status: State.SUBMITTED], args
 
         return [forms: forms, counts: getCounts(userId)]
     }
 
-    def getFormForReview(String userId, Long id) {
+    def findDoneList(String userId, Map args) {
+        def forms = StudentLeaveForm.executeQuery '''
+select new map(
+  form.id as id,
+  student.id as studentId,
+  student.name as studentName,
+  adminClass.name as adminClass,
+  form.type as type,
+  substring(form.reason, 1, 20) as reason,
+  form.dateApproved as date,
+  form.status as status
+)
+from StudentLeaveForm form
+join form.student student
+join student.adminClass adminClass
+where form.approver.id = :userId
+order by form.dateApproved desc
+''', [userId: userId], args
+
+        return [forms: forms, counts: getCounts(userId)]
+    }
+
+    def findNextList(String userId, Map args) {
+        def forms = StudentLeaveForm.executeQuery '''
+select new map(
+  form.id as id,
+  student.id as studentId,
+  student.name as studentName,
+  adminClass.name as adminClass,
+  form.type as type,
+  substring(form.reason, 1, 20) as reason,
+  form.dateApproved as date,
+  form.status as status
+)
+from StudentLeaveForm form
+join form.student student
+join student.adminClass adminClass
+where form.status = :status
+  and form.approver.id = :userId
+order by form.dateApproved desc
+''', [userId: userId, status: State.FINISHED], args
+
+        return [forms: forms, counts: getCounts(userId)]
+    }
+
+    def getFormForReview(String userId, Long id, ListType type) {
         def form = studentLeaveFormService.getFormInfo(id)
 
         def workitem = Workitem.findByInstanceAndActivityAndToAndDateProcessedIsNull(
@@ -103,10 +163,12 @@ order by form.dateSubmitted desc
                 schedules: schedules,
                 counts: getCounts(userId),
                 workitemId: workitem ? workitem.id : null,
+                prevId: getPrevReviewId(userId, id, type),
+                nextId: getNextReviewId(userId, id, type),
         ]
     }
 
-    def getFormForReview(String userId, Long id, UUID workitemId) {
+    def getFormForReview(String userId, Long id, ListType type, UUID workitemId) {
         def form = studentLeaveFormService.getFormInfo(id)
 
         def activity = Workitem.get(workitemId).activitySuffix
@@ -118,8 +180,77 @@ order by form.dateSubmitted desc
                 schedules: schedules,
                 counts: getCounts(userId),
                 workitemId: workitemId,
+                prevId: getPrevReviewId(userId, id, type),
+                nextId: getNextReviewId(userId, id, type),
         ]
     }
+
+    Long getPrevReviewId(String userId, Long id, ListType type) {
+        switch (type) {
+            case ListType.TODO:
+                return dataAccessService.getLong('''
+select form.id
+from StudentLeaveForm form
+join form.student student
+join student.adminClass adminClass
+where form.status = :status
+and adminClass.counsellor.id = :userId
+and form.dateSubmitted < (select dateSubmitted from StudentLeaveForm where id = :id)
+order by form.dateSubmitted desc
+''', [userId: userId, id: id, status: State.SUBMITTED])
+            case ListType.DONE:
+                return dataAccessService.getLong('''
+select form.id
+from StudentLeaveForm form
+where form.approver.id = :userId
+and form.dateApproved > (select dateApproved from StudentLeaveForm where id = :id)
+order by form.dateApproved asc
+''', [userId: userId, id: id])
+            case ListType.NEXT:
+                return dataAccessService.getLong('''
+select form.id
+from StudentLeaveForm form
+where form.status = :status
+  and form.approver.id = :userId
+and form.dateApproved > (select dateApproved from StudentLeaveForm where id = :id)
+order by form.dateApproved asc
+''', [userId: userId, id: id, status: State.FINISHED])
+        }
+    }
+
+    Long getNextReviewId(String userId, Long id, ListType type) {
+        switch (type) {
+            case ListType.TODO:
+                return dataAccessService.getLong('''
+select form.id
+from StudentLeaveForm form
+join form.student student
+join student.adminClass adminClass
+where form.status = :status
+and adminClass.counsellor.id = :userId
+and form.dateSubmitted > (select dateSubmitted from StudentLeaveForm where id = :id)
+order by form.dateSubmitted asc
+''', [userId: userId, id: id, status: State.SUBMITTED])
+            case ListType.DONE:
+                return dataAccessService.getLong('''
+select form.id
+from StudentLeaveForm form
+where form.approver.id = :userId
+and form.dateApproved < (select dateApproved from StudentLeaveForm where id = :id)
+order by form.dateApproved desc
+''', [userId: userId, id: id])
+            case ListType.NEXT:
+                return dataAccessService.getLong('''
+select form.id
+from StudentLeaveForm form
+where form.status = :status
+  and form.approver.id = :userId
+and form.dateApproved < (select dateApproved from StudentLeaveForm where id = :id)
+order by form.dateApproved desc
+''', [userId: userId, id: id, status: State.FINISHED])
+        }
+    }
+
 
     /**
      * 同意

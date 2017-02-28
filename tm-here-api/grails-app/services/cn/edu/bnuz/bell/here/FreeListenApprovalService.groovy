@@ -72,9 +72,9 @@ from FreeListenForm form
 join form.student student
 join student.major major
 join major.subject subject
-where form.approver.id = :approverId
+where form.approver.id = :userId
 order by form.dateApproved desc
-''',[approverId: userId], args
+''',[userId: userId], args
 
         return [forms: forms, counts: getCounts(userId)]
     }
@@ -99,6 +99,64 @@ where form.status = :status
 order by form.dateSubmitted
 ''',[status: State.SUBMITTED], args
         return [forms: forms, counts: getCounts(userId)]
+    }
+
+    Long getPrevReviewId(String userId, Long id, ListType type) {
+        switch (type) {
+            case ListType.TODO:
+                return dataAccessService.getLong('''
+select form.id
+from FreeListenForm form
+where form.status = :status
+and form.dateChecked < (select dateChecked from FreeListenForm where id = :id)
+order by form.dateChecked desc
+''', [id: id, status: State.CHECKED])
+            case ListType.DONE:
+                return dataAccessService.getLong('''
+select form.id
+from FreeListenForm form
+where form.approver.id = :userId
+and form.dateApproved > (select dateApproved from FreeListenForm where id = :id)
+order by form.dateApproved asc
+''', [userId: userId, id: id])
+            case ListType.TOBE:
+                return dataAccessService.getLong('''
+select form.id
+from FreeListenForm form
+where form.status = :status
+and form.dateSubmitted > (select dateSubmitted from FreeListenForm where id = :id)
+order by form.dateSubmitted asc
+''', [id: id, status: State.SUBMITTED])
+        }
+    }
+
+    Long getNextReviewId(String userId, Long id, ListType type) {
+        switch (type) {
+            case ListType.TODO:
+                return dataAccessService.getLong('''
+select form.id
+from FreeListenForm form
+where form.status = :status
+and form.dateChecked > (select dateChecked from FreeListenForm where id = :id)
+order by form.dateChecked asc
+''', [id: id, status: State.CHECKED])
+            case ListType.DONE:
+                return dataAccessService.getLong('''
+select form.id
+from FreeListenForm form
+where form.approver.id = :userId
+and form.dateApproved < (select dateApproved from FreeListenForm where id = :id)
+order by form.dateApproved desc
+''', [userId: userId, id: id])
+            case ListType.TOBE:
+                return dataAccessService.getLong('''
+select form.id
+from FreeListenForm form
+where form.status = :status
+and form.dateSubmitted < (select dateSubmitted from FreeListenForm where id = :id)
+order by form.dateSubmitted desc
+''', [id: id, status: State.SUBMITTED])
+        }
     }
 
     void accept(AcceptCommand cmd, String userId, UUID workitemId) {
