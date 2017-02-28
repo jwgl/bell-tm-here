@@ -5,6 +5,7 @@ import cn.edu.bnuz.bell.http.ServiceExceptionHandler
 import cn.edu.bnuz.bell.workflow.Activities
 import cn.edu.bnuz.bell.workflow.Event
 import cn.edu.bnuz.bell.workflow.ListCommand
+import cn.edu.bnuz.bell.workflow.ListType
 import cn.edu.bnuz.bell.workflow.commands.AcceptCommand
 import cn.edu.bnuz.bell.workflow.commands.RejectCommand
 import org.springframework.security.access.prepost.PreAuthorize
@@ -17,11 +18,12 @@ class FreeListenApprovalController implements ServiceExceptionHandler{
        renderJson freeListenApprovalService.list(approverId, cmd)
     }
 
-    def show(String approverId, Long freeListenApprovalId, String id) {
+    def show(String approverId, Long freeListenApprovalId, String id, String type) {
+        ListType listType = Enum.valueOf(ListType, type)
         if (id == 'undefined') {
-            renderJson freeListenApprovalService.getFormForReview(approverId, freeListenApprovalId, Activities.APPROVE)
+            renderJson freeListenApprovalService.getFormForReview(approverId, freeListenApprovalId, listType, Activities.APPROVE)
         } else {
-            renderJson freeListenApprovalService.getFormForReview(approverId, freeListenApprovalId, UUID.fromString(id))
+            renderJson freeListenApprovalService.getFormForReview(approverId, freeListenApprovalId, listType, UUID.fromString(id))
         }
     }
 
@@ -44,6 +46,6 @@ class FreeListenApprovalController implements ServiceExceptionHandler{
                 throw new BadRequestException()
         }
 
-        show(approverId, freeListenApprovalId, id)
+        show(approverId, freeListenApprovalId, id, 'todo')
     }
 }

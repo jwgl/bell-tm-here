@@ -4,6 +4,7 @@ import cn.edu.bnuz.bell.http.BadRequestException
 import cn.edu.bnuz.bell.http.ServiceExceptionHandler
 import cn.edu.bnuz.bell.workflow.Event
 import cn.edu.bnuz.bell.workflow.ListCommand
+import cn.edu.bnuz.bell.workflow.ListType
 import cn.edu.bnuz.bell.workflow.State
 import cn.edu.bnuz.bell.workflow.commands.AcceptCommand
 import cn.edu.bnuz.bell.workflow.commands.RejectCommand
@@ -17,11 +18,12 @@ class StudentLeaveApprovalController implements ServiceExceptionHandler {
         renderJson studentLeaveApprovalService.list(approverId, cmd)
     }
 
-    def show(String approverId, Long studentLeaveApprovalId, String id) {
+    def show(String approverId, Long studentLeaveApprovalId, String id, String type) {
+        ListType listType = Enum.valueOf(ListType, type)
         if (id == 'undefined') {
-            renderJson studentLeaveApprovalService.getFormForReview(approverId, studentLeaveApprovalId)
+            renderJson studentLeaveApprovalService.getFormForReview(approverId, studentLeaveApprovalId, listType)
         } else {
-            renderJson studentLeaveApprovalService.getFormForReview(approverId, studentLeaveApprovalId, UUID.fromString(id))
+            renderJson studentLeaveApprovalService.getFormForReview(approverId, studentLeaveApprovalId, listType, UUID.fromString(id))
         }
     }
 
@@ -44,6 +46,6 @@ class StudentLeaveApprovalController implements ServiceExceptionHandler {
                 throw new BadRequestException()
         }
 
-        show(approverId, studentLeaveApprovalId, id)
+        show(approverId, studentLeaveApprovalId, id, 'todo')
     }
 }

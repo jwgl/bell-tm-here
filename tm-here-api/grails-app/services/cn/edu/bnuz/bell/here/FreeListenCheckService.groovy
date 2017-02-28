@@ -3,6 +3,7 @@ package cn.edu.bnuz.bell.here
 import cn.edu.bnuz.bell.http.BadRequestException
 import cn.edu.bnuz.bell.organization.Teacher
 import cn.edu.bnuz.bell.security.User
+import cn.edu.bnuz.bell.service.DataAccessService
 import cn.edu.bnuz.bell.tm.common.operation.ScheduleService
 import cn.edu.bnuz.bell.workflow.Activities
 import cn.edu.bnuz.bell.workflow.DomainStateMachineHandler
@@ -22,6 +23,7 @@ import javax.annotation.Resource
 class FreeListenCheckService {
     FreeListenFormService freeListenFormService
     ScheduleService scheduleService
+    DataAccessService dataAccessService
 
     @Resource(name='freeListenFormStateHandler')
     DomainStateMachineHandler domainStateMachineHandler
@@ -97,7 +99,7 @@ order by form.dateChecked desc
         return [forms: forms, counts: getCounts(teacherId)]
     }
 
-    def getFormForReview(String teacherId, Long id, String activity) {
+    def getFormForReview(String teacherId, Long id, ListType type, String activity) {
         def form = freeListenFormService.getFormInfo(id)
 
         def workitem = Workitem.findByInstanceAndActivityAndToAndDateProcessedIsNull(
@@ -115,10 +117,12 @@ order by form.dateChecked desc
                 departmentSchedules: departmentSchedules,
                 counts: getCounts(teacherId),
                 workitemId: workitem ? workitem.id : null,
+                prevId: getPrevReviewId(teacherId, id, type),
+                nextId: getNextReviewId(teacherId, id, type),
         ]
     }
 
-    def getFormForReview(String teacherId, Long id, UUID workitemId) {
+    def getFormForReview(String teacherId, Long id, ListType type, UUID workitemId) {
         def form = freeListenFormService.getFormInfo(id)
 
         def activity = Workitem.get(workitemId).activitySuffix
@@ -132,7 +136,58 @@ order by form.dateChecked desc
                 departmentSchedules: departmentSchedules,
                 counts: getCounts(teacherId),
                 workitemId: workitemId,
+                prevId: getPrevReviewId(teacherId, id, type),
+                nextId: getNextReviewId(teacherId, id, type),
         ]
+    }
+
+
+    Long getPrevReviewId(String teacherId, Long id, ListType type) {
+        switch (type) {
+            case ListType.TODO:
+                return dataAccessService.getLong('''
+select form.id
+from FreeListenForm form
+where form.checker.id = :teacherId
+and form.status = :status
+and form.dateSubmitted < (select dateSubmitted from FreeListenForm where id = :id)
+order by form.dateSubmitted desc
+''', [teacherId: teacherId, id: id, status: State.SUBMITTED])
+            case ListType.DONE:
+                return dataAccessService.getLong('''
+select form.id
+from FreeListenForm form
+where form.checker.id = :teacherId
+and form.dateChecked is not null
+and form.status <> :status
+and form.dateChecked > (select dateChecked from FreeListenForm where id = :id)
+order by form.dateChecked asc
+''', [teacherId: teacherId, id: id, status: State.SUBMITTED])
+        }
+    }
+
+    Long getNextReviewId(String teacherId, Long id, ListType type) {
+        switch (type) {
+            case ListType.TODO:
+                return dataAccessService.getLong('''
+select form.id
+from FreeListenForm form
+where form.checker.id = :teacherId
+and form.status = :status
+and form.dateSubmitted > (select dateSubmitted from FreeListenForm where id = :id)
+order by form.dateSubmitted asc
+''', [teacherId: teacherId, id: id, status: State.SUBMITTED])
+            case ListType.DONE:
+                return dataAccessService.getLong('''
+select form.id
+from FreeListenForm form
+where form.checker.id = :teacherId
+and form.dateChecked is not null
+and form.status <> :status
+and form.dateChecked < (select dateChecked from FreeListenForm where id = :id)
+order by form.dateChecked desc
+''', [teacherId: teacherId, id: id, status: State.SUBMITTED])
+        }
     }
 
     void accept(AcceptCommand cmd, String teacherId, UUID workitemId) {
