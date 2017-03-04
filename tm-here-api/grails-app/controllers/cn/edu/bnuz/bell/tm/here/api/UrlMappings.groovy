@@ -4,7 +4,7 @@ class UrlMappings {
 
     static mappings = {
         "/teachers"(resources: 'teacher', includes: []) {
-            "/rollcalls"(resources: 'rollcall')
+            "/rollcalls"(resources: 'rollcallForm')
             "/freeListens"(resources: 'freeListenCheck', includes: ['index']) {
                 "/workitems"(resources: 'freeListenCheck', includes: ['show', 'patch'])
                 "/approvers"(controller: 'freeListenCheck', action: 'approvers', method: 'GET')
@@ -12,6 +12,7 @@ class UrlMappings {
         }
 
         "/students"(resources: 'student', includes: []) {
+            "/attendances"(controller: 'attendance', action: 'student', method: 'GET')
             "/leaves"(resources: 'studentLeaveForm') {
                 "/approvers"(controller: 'studentLeaveForm', action: 'approvers', method: 'GET')
             }
@@ -28,6 +29,16 @@ class UrlMappings {
                 "/workitems"(resources: 'freeListenApproval', includes: ['show', 'patch'])
             }
         }
+
+        "/departments"(resources: 'department', includes:[]) {
+            "/attendances"(controller: 'attendance', action: 'department', method: 'GET')
+        }
+
+        "/adminClasses"(resources: 'adminClass', includes: []) {
+            "/attendances"(controller: 'attendance', action: 'adminClass', method: 'GET')
+        }
+
+        "/attendances"(resources: 'attendance', includes: ['index'])
 
         "/leaves"(resources: 'studentLeavePublic', includes: ['show'])
 
