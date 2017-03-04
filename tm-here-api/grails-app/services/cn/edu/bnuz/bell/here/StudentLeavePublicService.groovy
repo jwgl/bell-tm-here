@@ -3,8 +3,11 @@ package cn.edu.bnuz.bell.here
 import cn.edu.bnuz.bell.http.ForbiddenException
 import cn.edu.bnuz.bell.http.NotFoundException
 import cn.edu.bnuz.bell.master.Term
+import cn.edu.bnuz.bell.organization.Student
+import cn.edu.bnuz.bell.security.SecurityService
 import cn.edu.bnuz.bell.service.DataAccessService
 import cn.edu.bnuz.bell.tm.common.operation.ScheduleService
+import cn.edu.bnuz.bell.tm.common.organization.StudentService
 import grails.transaction.Transactional
 
 @Transactional
@@ -12,6 +15,8 @@ class StudentLeavePublicService {
     StudentLeaveFormService studentLeaveFormService
     ScheduleService scheduleService
     DataAccessService dataAccessService
+    SecurityService securityService
+    StudentService studentService
 
     def getFormForShow(String userId, Long id) {
         def form = studentLeaveFormService.getFormInfo(id)
@@ -20,7 +25,7 @@ class StudentLeavePublicService {
             throw new NotFoundException()
         }
 
-        if (!canView(userId, id)) {
+        if (!canView(userId, form)) {
             throw new ForbiddenException()
         }
 
@@ -32,33 +37,60 @@ class StudentLeavePublicService {
         ]
     }
 
-    private canView(String teacherId, Long id) {
-        def count = dataAccessService.getInteger '''
-select count(distinct form.id)
-From StudentLeaveForm form
-join form.items item,
-     CourseClass courseClass
-join courseClass.tasks task
-join task.schedules taskSchedule
-join task.students taskStudent
-where form.status in ('APPROVED', 'FINISHED')
-  and form.term = courseClass.term
-  and (
-    item.taskSchedule = taskSchedule or
-    item.dayOfWeek = taskSchedule.dayOfWeek or
-    item.taskSchedule is null and item.dayOfWeek is null
-  )
-  and form.student = taskStudent.student
-  and item.week between taskSchedule.startWeek and taskSchedule.endWeek
-  and (
-    taskSchedule.oddEven = 0 or
-    taskSchedule.oddEven = 1 and item.week % 2 = 1 or
-    taskSchedule.oddEven = 2 and item.week % 2 = 0
-  )
-  and taskSchedule.teacher.id = :teacherId
-  and form.id = :id
-''', [teacherId: teacherId, id: id]
-        return count > 0
+    private canView(String userId, Map form) {
+        String studentId = form.studentId
+        if (userId == studentId) {
+            return true
+        }
+
+        if (securityService.hasRole('ROLE_ROLLCALL_DEPT_ADMIN')) {
+            if (securityService.departmentId == studentService.getDepartment(studentId).id) {
+                return true
+            }
+        }
+
+        if (securityService.hasRole('ROLE_STUDENT_COUNSELLOR')) {
+            if (userId == studentService.getCounsellor(studentId)?.id) {
+                return true
+            }
+        }
+
+        if (securityService.hasRole('ROLE_CLASS_SUPERVISOR')) {
+            if (userId == studentService.getSupervisor(studentId)?.id) {
+                return true
+            }
+        }
+
+        if (securityService.hasRole('ROLE_COURSE_TEACHER')) {
+            if (dataAccessService.getInteger('''
+    select count(distinct form.id)
+    from StudentLeaveForm form
+    join form.items item,
+         CourseClass courseClass
+    join courseClass.tasks task
+    join task.schedules taskSchedule
+    join task.students taskStudent
+    where form.status in ('APPROVED', 'FINISHED')
+      and form.term = courseClass.term
+      and (
+        item.taskSchedule = taskSchedule or
+        item.dayOfWeek = taskSchedule.dayOfWeek or
+        item.taskSchedule is null and item.dayOfWeek is null
+      )
+      and form.student = taskStudent.student
+      and item.week between taskSchedule.startWeek and taskSchedule.endWeek
+      and (
+        taskSchedule.oddEven = 0 or
+        taskSchedule.oddEven = 1 and item.week % 2 = 1 or
+        taskSchedule.oddEven = 2 and item.week % 2 = 0
+      )
+      and taskSchedule.teacher.id = :teacherId
+      and form.id = :id
+    ''', [teacherId: userId, id: form.id]) > 0) {
+                return true
+            }
+        }
+        return false
     }
 
     /**

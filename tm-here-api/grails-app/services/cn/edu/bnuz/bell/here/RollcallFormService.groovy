@@ -11,7 +11,7 @@ import cn.edu.bnuz.bell.organization.Teacher
 import grails.transaction.Transactional
 
 @Transactional
-class RollcallService {
+class RollcallFormService {
     def getRollcallStudents(Term term, String teacherId, Integer week, Integer dayOfWeek, Integer startSection) {
         TaskStudent.executeQuery '''
 select new Map (

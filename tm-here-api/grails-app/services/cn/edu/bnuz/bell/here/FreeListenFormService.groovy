@@ -54,7 +54,7 @@ order by form.dateCreated desc
         ]
     }
 
-    def getFormInfo(Long id) {
+    Map getFormInfo(Long id) {
         def results = FreeListenForm.executeQuery '''
 select new map(
   form.id as id,

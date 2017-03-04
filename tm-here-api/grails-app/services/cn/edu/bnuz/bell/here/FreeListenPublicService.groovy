@@ -3,8 +3,10 @@ package cn.edu.bnuz.bell.here
 import cn.edu.bnuz.bell.http.ForbiddenException
 import cn.edu.bnuz.bell.http.NotFoundException
 import cn.edu.bnuz.bell.master.Term
+import cn.edu.bnuz.bell.security.SecurityService
 import cn.edu.bnuz.bell.service.DataAccessService
 import cn.edu.bnuz.bell.tm.common.operation.ScheduleService
+import cn.edu.bnuz.bell.tm.common.organization.StudentService
 import grails.transaction.Transactional
 
 @Transactional
@@ -12,6 +14,8 @@ class FreeListenPublicService {
     FreeListenFormService freeListenFormService
     ScheduleService scheduleService
     DataAccessService dataAccessService
+    SecurityService securityService
+    StudentService studentService
 
     def getFormForShow(String userId, Long id) {
         def form = freeListenFormService.getFormInfo(id)
@@ -20,7 +24,7 @@ class FreeListenPublicService {
             throw new NotFoundException()
         }
 
-        if (!canView(userId, id)) {
+        if (!canView(userId, form)) {
             throw new ForbiddenException()
         }
 
@@ -33,7 +37,30 @@ class FreeListenPublicService {
         ]
     }
 
-    private canView(String teacherId, Long id) {
+    private canView(String userId, Map form) {
+        String studentId = form.studentId
+        if (userId == studentId) {
+            return true
+        }
+
+        if (securityService.hasRole('ROLE_ROLLCALL_DEPT_ADMIN')) {
+            if (securityService.departmentId == studentService.getDepartment(studentId).id) {
+                return true
+            }
+        }
+
+        if (securityService.hasRole('ROLE_STUDENT_COUNSELLOR')) {
+            if (userId == studentService.getCounsellor(studentId)?.id) {
+                return true
+            }
+        }
+
+        if (securityService.hasRole('ROLE_CLASS_SUPERVISOR')) {
+            if (userId == studentService.getSupervisor(studentId)?.id) {
+                return true
+            }
+        }
+
         def count = dataAccessService.getInteger '''
 select count(distinct form.id)
 From FreeListenForm form
@@ -48,7 +75,7 @@ where form.status = 'APPROVED'
   and form.student = taskStudent.student
   and taskSchedule.teacher.id = :teacherId
   and form.id = :id
-''', [teacherId: teacherId, id: id]
+''', [teacherId: userId, id: form.id]
         return count > 0
     }
 

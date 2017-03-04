@@ -4,10 +4,10 @@ import cn.edu.bnuz.bell.http.ServiceExceptionHandler
 import cn.edu.bnuz.bell.tm.common.master.TermService
 import cn.edu.bnuz.bell.tm.common.operation.ScheduleService
 
-class RollcallController implements ServiceExceptionHandler {
+class RollcallFormController implements ServiceExceptionHandler {
     TermService termService
     ScheduleService scheduleService
-    RollcallService rollcallService
+    RollcallFormService rollcallFormService
     StudentLeavePublicService studentLeavePublicService
     FreeListenPublicService freeListenPublicService
 
@@ -30,8 +30,8 @@ class RollcallController implements ServiceExceptionHandler {
         def week = params.int('week')
         def dayOfWeek = params.int('day')
         def startSection = params.int('section')
-        def students = rollcallService.getRollcallStudents(term, teacherId, week, dayOfWeek, startSection)
-        def rollcalls = rollcallService.getRollcalls(term, teacherId, week, dayOfWeek, startSection)
+        def students = rollcallFormService.getRollcallStudents(term, teacherId, week, dayOfWeek, startSection)
+        def rollcalls = rollcallFormService.getRollcalls(term, teacherId, week, dayOfWeek, startSection)
         def leaves = studentLeavePublicService.getRollcallLeaves(term, teacherId, week, dayOfWeek, startSection)
         def freeListens = freeListenPublicService.getRollcallFreeListens(term, teacherId, week, dayOfWeek, startSection)
         renderJson([
@@ -47,7 +47,7 @@ class RollcallController implements ServiceExceptionHandler {
     def save(String teacherId) {
         def cmd = new RollcallCreateCommand()
         bindData(cmd, request.JSON)
-        def rollcall = rollcallService.create(teacherId, cmd)
+        def rollcall = rollcallFormService.create(teacherId, cmd)
         renderJson([id: rollcall.id])
     }
 
@@ -55,12 +55,12 @@ class RollcallController implements ServiceExceptionHandler {
         def cmd = new RollcallUpdateCommand()
         bindData(cmd, request.JSON)
         cmd.id = id
-        rollcallService.update(teacherId, cmd)
+        rollcallFormService.update(teacherId, cmd)
         renderOk()
     }
 
     def delete(String teacherId, Long id) {
-        rollcallService.delete(teacherId, id)
+        rollcallFormService.delete(teacherId, id)
         renderOk()
     }
 }
