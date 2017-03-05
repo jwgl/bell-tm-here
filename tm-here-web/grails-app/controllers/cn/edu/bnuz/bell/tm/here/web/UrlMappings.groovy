@@ -9,7 +9,7 @@ class UrlMappings {
         }
 
         "/students"(resources: 'student', 'includes': []) {
-            "/attendances"(controller: 'attendance', action: 'show', method: 'GET')
+            "/attendances"(controller: 'attendance', action: 'student', method: 'GET')
             "/leaves"(resources: 'studentLeaveForm', includes: ['index'])
             "/freeListens"(resources: 'freeListenForm', includes: ['index'])
         }
@@ -19,7 +19,7 @@ class UrlMappings {
             "/freeListens"(resources: 'freeListenApproval', includes: ['index'])
         }
 
-        "/attendances"(resources: 'attendance', includes: ['index'])
+        "/attendances"(resources: 'attendance', includes: ['index', 'show'])
 
         "/leaves"(resources: 'studentLeavePublic', includes: ['show'])
 

@@ -79,7 +79,12 @@ where form.status = 'APPROVED'
         return count > 0
     }
 
-    def getRollcallFreeListens(Term term, String teacherId, Integer week, Integer dayOfWeek, Integer startSection) {
+    /**
+     * 查找与考勤命令相关的免听记录
+     * @param cmd
+     * @return 免听列表
+     */
+    def listByRollcall(RollcallCommand cmd) {
         FreeListenForm.executeQuery '''
 select new map(
   form.id as id,
@@ -92,7 +97,7 @@ join courseClass.tasks task
 join task.schedules taskSchedule
 join task.students taskStudent
 where form.status = 'APPROVED'
-  and form.term = :term
+  and form.term.id = :termId
   and item.taskSchedule = taskSchedule
   and form.student = taskStudent.student
   and form.term = courseClass.term
@@ -105,6 +110,6 @@ where form.status = 'APPROVED'
   and taskSchedule.dayOfWeek = :dayOfWeek
   and taskSchedule.startSection = :startSection
   and taskSchedule.teacher.id = :teacherId
-''', [term: term, teacherId: teacherId, week: week, dayOfWeek: dayOfWeek, startSection: startSection]
+''', cmd as Map
     }
 }

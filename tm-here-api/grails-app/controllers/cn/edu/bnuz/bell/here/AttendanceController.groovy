@@ -1,35 +1,89 @@
 package cn.edu.bnuz.bell.here
 
+import cn.edu.bnuz.bell.http.ForbiddenException
 import cn.edu.bnuz.bell.http.ServiceExceptionHandler
+import cn.edu.bnuz.bell.security.SecurityService
 import cn.edu.bnuz.bell.tm.common.master.TermService
+import cn.edu.bnuz.bell.tm.common.organization.StudentService
 import org.springframework.security.access.prepost.PreAuthorize
 
 @PreAuthorize('hasAuthority("PERM_ATTENDANCE_LIST")')
 class AttendanceController implements ServiceExceptionHandler{
     AttendanceService attendanceService
     TermService termService
+    SecurityService securityService
+    StudentService studentService
 
     def index() {
         def offset = params.int('offset') ?: 0
         def max = params.int('max') ?: 20
-        renderJson attendanceService.getAll(termService.activeTerm.id, offset, max)
+        def termId = termService.activeTerm.id
+        if (securityService.hasRole('ROLE_ROLLCALL_DEPT_ADMIN')) {
+            renderJson([
+                    adminClasses: attendanceService.adminClassesByDepartment(termId, securityService.departmentId),
+                    students    : attendanceService.studentStatsByDepartment(termId, securityService.departmentId, offset, max)
+            ])
+        } else if (securityService.hasRole('ROLE_STUDENT_COUNSELLOR') || securityService.hasRole('ROLE_CLASS_SUPERVISOR')) {
+            renderJson([
+                    adminClasses: attendanceService.adminClassesByAdministrator(termId, securityService.userId),
+                    students    : attendanceService.studentStatsByAdministrator(termId, securityService.userId, offset, max),
+            ])
+        } else {
+            throw new ForbiddenException()
+        }
     }
 
-    def department(String departmentId) {
-        def offset = params.int('offset') ?: 0
-        def max = params.int('max') ?: 20
-        renderJson attendanceService.getByDepartment(termService.activeTerm.id, departmentId, offset, max)
+    /**
+     * 管理人员查看
+     * @param id 学号
+     */
+    def show(String id) {
+        def termId = termService.activeTerm.id
+        def userId = securityService.userId
+        def studentId = id
+        if (securityService.hasRole('ROLE_ROLLCALL_DEPT_ADMIN') && securityService.departmentId == studentService.getDepartment(studentId)?.id ||
+            securityService.hasRole('ROLE_STUDENT_COUNSELLOR') && userId == studentService.getCounsellor(studentId)?.id ||
+            securityService.hasRole('ROLE_CLASS_SUPERVISOR') && userId == studentService.getSupervisor(studentId)?.id) {
+            renderJson([
+                    list :attendanceService.getStudentAttendances(studentId, termId),
+                    student: studentService.getStudentInfo(studentId)
+            ])
+        } else {
+            throw new ForbiddenException()
+        }
     }
-
 
     def adminClass(Long adminClassId) {
         def offset = params.int('offset') ?: 0
         def max = params.int('max') ?: 20
-        renderJson attendanceService.getByAdminClass(termService.activeTerm.id, adminClassId, offset, max)
+        def termId = termService.activeTerm.id
+        if (securityService.hasRole('ROLE_ROLLCALL_DEPT_ADMIN')) {
+            renderJson([
+                    adminClasses: attendanceService.adminClassesByDepartment(termId, securityService.departmentId),
+                    students    : attendanceService.studentStatsByAdminClass(termService.activeTerm.id, adminClassId, offset, max)
+            ])
+        } else if (securityService.hasRole('ROLE_STUDENT_COUNSELLOR') || securityService.hasRole('ROLE_CLASS_SUPERVISOR')) {
+            renderJson([
+                    adminClasses: attendanceService.adminClassesByAdministrator(termId, securityService.userId),
+                    students    : attendanceService.studentStatsByAdminClass(termService.activeTerm.id, adminClassId, offset, max)
+            ])
+        } else {
+            throw new ForbiddenException()
+        }
     }
 
-    @PreAuthorize('hasAnyAuthority("PERM_ATTENDANCE_LIST", "PERM_ATTENDANCE_ITEM")')
+    /**
+     * 学生本人查看
+     * @param studentId 学号
+     */
+    @PreAuthorize('hasAuthority("PERM_ATTENDANCE_ITEM")')
     def student(String studentId) {
-        renderJson attendanceService.getStudentAttendances(studentId, termService.activeTerm.id)
+        if (studentId == securityService.userId) {
+            renderJson([
+                    list: attendanceService.getStudentAttendances(studentId, termService.activeTerm.id),
+            ])
+        } else {
+            throw new ForbiddenException()
+        }
     }
 }
