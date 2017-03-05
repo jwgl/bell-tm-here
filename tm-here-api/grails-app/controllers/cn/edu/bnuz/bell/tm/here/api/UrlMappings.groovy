@@ -4,7 +4,11 @@ class UrlMappings {
 
     static mappings = {
         "/teachers"(resources: 'teacher', includes: []) {
-            "/rollcalls"(resources: 'rollcallForm')
+            "/rollcalls"(resources: 'rollcallForm') {
+                collection {
+                    "/settings"(controller: 'rollcallForm', action: 'settings', method: 'PUT')
+                }
+            }
             "/freeListens"(resources: 'freeListenCheck', includes: ['index']) {
                 "/workitems"(resources: 'freeListenCheck', includes: ['show', 'patch'])
                 "/approvers"(controller: 'freeListenCheck', action: 'approvers', method: 'GET')
