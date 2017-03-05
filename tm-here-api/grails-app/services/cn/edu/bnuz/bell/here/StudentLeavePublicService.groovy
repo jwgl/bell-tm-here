@@ -94,15 +94,11 @@ class StudentLeavePublicService {
     }
 
     /**
-     * 获取指定条件的学生请假列表，用于考勤。
-     * @param term 学期
-     * @param teacherId 教师ID
-     * @param week 周次
-     * @param dayOfWeek 星期几
-     * @param startSection 开始节
+     * 查找与考勤命令相关的学生请假。
+     * @param cmd 考勤命令
      * @return 请假列表
      */
-    def getRollcallLeaves(Term term, String teacherId, Integer week, Integer dayOfWeek, Integer startSection) {
+    def listByRollcall(RollcallCommand cmd) {
         StudentLeaveForm.executeQuery '''
 select new map(
   form.id as id,
@@ -116,7 +112,7 @@ join courseClass.tasks task
 join task.schedules taskSchedule
 join task.students taskStudent
 where form.status in ('APPROVED', 'FINISHED')
-  and form.term = :term
+  and form.term.id = :termId
   and item.week = :week
   and (
     item.taskSchedule = taskSchedule or
@@ -134,6 +130,6 @@ where form.status in ('APPROVED', 'FINISHED')
   and taskSchedule.dayOfWeek = :dayOfWeek
   and taskSchedule.startSection = :startSection
   and taskSchedule.teacher.id = :teacherId
-''', [term: term, teacherId: teacherId, week: week, dayOfWeek: dayOfWeek, startSection: startSection]
+''', cmd as Map
     }
 }

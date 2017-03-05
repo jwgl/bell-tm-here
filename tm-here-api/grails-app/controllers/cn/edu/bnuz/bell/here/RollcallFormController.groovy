@@ -8,59 +8,51 @@ class RollcallFormController implements ServiceExceptionHandler {
     TermService termService
     ScheduleService scheduleService
     RollcallFormService rollcallFormService
-    StudentLeavePublicService studentLeavePublicService
-    FreeListenPublicService freeListenPublicService
 
     def index(String teacherId) {
         def term = termService.activeTerm
         def schedules = scheduleService.getTeacherSchedules(teacherId, term.id)
         renderJson([
                 term: [
-                        startWeek: term.startWeek,
-                        endWeek: term.endWeek,
+                        startWeek  : term.startWeek,
+                        endWeek    : term.endWeek,
                         currentWeek: term.currentWeek,
                 ],
                 schedules: schedules,
-                config: [hideLeave: false, hideFree: false, hideCancel: false, random: 100],
+                config: [
+                        hideLeave: false,
+                        hideFree: false,
+                        hideCancel: false,
+                        random: 100
+                ],
         ])
     }
 
     def create(String teacherId) {
-        def term = termService.activeTerm
-        def week = params.int('week')
-        def dayOfWeek = params.int('day')
-        def startSection = params.int('section')
-        def students = rollcallFormService.getRollcallStudents(term, teacherId, week, dayOfWeek, startSection)
-        def rollcalls = rollcallFormService.getRollcalls(term, teacherId, week, dayOfWeek, startSection)
-        def leaves = studentLeavePublicService.getRollcallLeaves(term, teacherId, week, dayOfWeek, startSection)
-        def freeListens = freeListenPublicService.getRollcallFreeListens(term, teacherId, week, dayOfWeek, startSection)
-        renderJson([
-                students: students,
-                rollcalls: rollcalls,
-                leaves: leaves,
-                freeListens: freeListens,
-                cancelExams: [],
-                locked: false,
-        ])
+        RollcallCommand cmd = new RollcallCommand(
+                termId      : termService.activeTerm.id,
+                teacherId   : teacherId,
+                week        : params.int('week'),
+                dayOfWeek   : params.int('day'),
+                startSection: params.int('section'),
+        )
+        renderJson rollcallFormService.getFormForCreate(cmd)
     }
 
     def save(String teacherId) {
         def cmd = new RollcallCreateCommand()
         bindData(cmd, request.JSON)
-        def rollcall = rollcallFormService.create(teacherId, cmd)
-        renderJson([id: rollcall.id])
+        renderJson rollcallFormService.create(teacherId, cmd)
     }
 
     def update(String teacherId, Long id) {
         def cmd = new RollcallUpdateCommand()
         bindData(cmd, request.JSON)
         cmd.id = id
-        rollcallFormService.update(teacherId, cmd)
-        renderOk()
+        renderJson rollcallFormService.update(teacherId, cmd)
     }
 
     def delete(String teacherId, Long id) {
-        rollcallFormService.delete(teacherId, id)
-        renderOk()
+        renderJson rollcallFormService.delete(teacherId, id)
     }
 }

@@ -5,6 +5,6 @@
     <asset:script src="/static/js/app/here/attendance/item.js"></asset:script>
 </head>
 <body>
-    <attendance-item></attendance-item>
+    <attendance-item studentId="${params.id}"></attendance-item>
 </body>
 </html>

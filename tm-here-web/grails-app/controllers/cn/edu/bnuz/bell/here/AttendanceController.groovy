@@ -2,10 +2,12 @@ package cn.edu.bnuz.bell.here
 
 import org.springframework.security.access.prepost.PreAuthorize
 
+@PreAuthorize('hasAuthority("PERM_ATTENDANCE_LIST")')
 class AttendanceController {
-    @PreAuthorize('hasAuthority("PERM_ATTENDANCE_LIST")')
     def index() { }
 
-    @PreAuthorize('hasAnyAuthority("PERM_ATTENDANCE_LIST", "PERM_ATTENDANCE_ITEM")')
     def show() { }
+
+    @PreAuthorize('hasAuthority("PERM_ATTENDANCE_ITEM")')
+    def student() { }
 }

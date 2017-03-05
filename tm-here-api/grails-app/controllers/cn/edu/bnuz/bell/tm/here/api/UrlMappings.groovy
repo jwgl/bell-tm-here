@@ -30,15 +30,11 @@ class UrlMappings {
             }
         }
 
-        "/departments"(resources: 'department', includes:[]) {
-            "/attendances"(controller: 'attendance', action: 'department', method: 'GET')
-        }
-
         "/adminClasses"(resources: 'adminClass', includes: []) {
             "/attendances"(controller: 'attendance', action: 'adminClass', method: 'GET')
         }
 
-        "/attendances"(resources: 'attendance', includes: ['index'])
+        "/attendances"(resources: 'attendance', includes: ['index', 'show'])
 
         "/leaves"(resources: 'studentLeavePublic', includes: ['show'])
 

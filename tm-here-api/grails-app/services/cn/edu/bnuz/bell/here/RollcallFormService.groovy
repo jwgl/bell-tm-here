@@ -3,7 +3,6 @@ package cn.edu.bnuz.bell.here
 import cn.edu.bnuz.bell.http.BadRequestException
 import cn.edu.bnuz.bell.http.ForbiddenException
 import cn.edu.bnuz.bell.http.NotFoundException
-import cn.edu.bnuz.bell.master.Term
 import cn.edu.bnuz.bell.operation.TaskSchedule
 import cn.edu.bnuz.bell.operation.TaskStudent
 import cn.edu.bnuz.bell.organization.Student
@@ -12,8 +11,12 @@ import grails.transaction.Transactional
 
 @Transactional
 class RollcallFormService {
-    def getRollcallStudents(Term term, String teacherId, Integer week, Integer dayOfWeek, Integer startSection) {
-        TaskStudent.executeQuery '''
+    StudentLeavePublicService studentLeavePublicService
+    FreeListenPublicService freeListenPublicService
+    AttendanceService attendanceService
+
+    def getFormForCreate(RollcallCommand cmd) {
+        def students = TaskStudent.executeQuery '''
 select new Map (
     student.id as id,
     student.name as name,
@@ -29,7 +32,7 @@ join major.subject subject
 join student.adminClass adminClass
 join task.schedules taskSchedule
 join task.courseClass courseClass
-where courseClass.term = :term
+where courseClass.term.id = :termId
 and taskSchedule.teacher.id = :teacherId
 and :week between taskSchedule.startWeek and taskSchedule.endWeek
 and (taskSchedule.oddEven = 0
@@ -37,11 +40,9 @@ and (taskSchedule.oddEven = 0
   or taskSchedule.oddEven = 2 and :week % 2 = 0)
 and taskSchedule.dayOfWeek = :dayOfWeek
 and taskSchedule.startSection = :startSection
-''', [term: term, teacherId: teacherId, week: week, dayOfWeek: dayOfWeek, startSection: startSection]
-    }
+''', cmd as Map
 
-    def getRollcalls(Term term, String teacherId, Integer week, Integer dayOfWeek, Integer startSection) {
-        Rollcall.executeQuery '''
+        def rollcalls = Rollcall.executeQuery '''
 select new Map (
     rollcall.id as id,
     student.id as studentId,
@@ -52,12 +53,22 @@ join rollcall.student student
 join rollcall.taskSchedule taskSchedule
 join taskSchedule.task task
 join task.courseClass courseClass
-where courseClass.term = :term
+where courseClass.term.id = :termId
 and taskSchedule.teacher.id = :teacherId
 and rollcall.week = :week
 and taskSchedule.dayOfWeek = :dayOfWeek
 and taskSchedule.startSection = :startSection
-''', [term: term, teacherId: teacherId, week: week, dayOfWeek: dayOfWeek, startSection: startSection]
+''', cmd as Map
+
+        [
+                students   : students,
+                rollcalls  : rollcalls,
+                leaves     : studentLeavePublicService.listByRollcall(cmd),
+                freeListens: freeListenPublicService.listByRollcall(cmd),
+                cancelExams: [], // TODO Find cancel examine records
+                attendances: attendanceService.statsByRollcall(cmd),
+                locked     : false,
+        ]
     }
 
     def create(String teacherId, RollcallCreateCommand cmd) {
@@ -72,6 +83,14 @@ and taskSchedule.startSection = :startSection
                 dateModified: now,
         )
         rollcall.save()
+
+        return [
+                id: rollcall.id,
+                attendances: attendanceService.studentCourseClassStats(
+                        rollcall.student.id,
+                        rollcall.taskSchedule.id
+                ),
+        ]
     }
 
     def update(String teacherId, RollcallUpdateCommand cmd) {
@@ -91,6 +110,13 @@ and taskSchedule.startSection = :startSection
 
         rollcall.type = cmd.type
         rollcall.save()
+
+        return [
+                attendances: attendanceService.studentCourseClassStats(
+                        rollcall.student.id,
+                        rollcall.taskSchedule.id
+                ),
+        ]
     }
 
     def delete(String teacherId, Long id) {
@@ -109,6 +135,13 @@ and taskSchedule.startSection = :startSection
         }
 
         rollcall.delete()
+
+        return [
+                attendances: attendanceService.studentCourseClassStats(
+                        rollcall.student.id,
+                        rollcall.taskSchedule.id
+                ),
+        ]
     }
 
     def canUpdate(Rollcall rollcall) {
