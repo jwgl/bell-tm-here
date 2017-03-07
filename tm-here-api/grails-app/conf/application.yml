@@ -115,7 +115,7 @@ server:
 
 spring:
     application:
-        name: '@info.app.name@'
+        name: tm-here-api
 
 eureka:
     client:
