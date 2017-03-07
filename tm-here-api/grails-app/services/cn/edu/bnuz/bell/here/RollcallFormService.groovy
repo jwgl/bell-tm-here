@@ -45,15 +45,16 @@ and taskSchedule.startSection = :startSection
         def rollcalls = Rollcall.executeQuery '''
 select new Map (
     rollcall.id as id,
-    student.id as studentId,
+    rollcall.student.id as studentId,
     rollcall.type as type
 )
 from Rollcall rollcall
-join rollcall.student student
 join rollcall.taskSchedule taskSchedule
 join taskSchedule.task task
+join task.students taskStudent
 join task.courseClass courseClass
-where courseClass.term.id = :termId
+where taskStudent.student = rollcall.student
+and courseClass.term.id = :termId
 and taskSchedule.teacher.id = :teacherId
 and rollcall.week = :week
 and taskSchedule.dayOfWeek = :dayOfWeek
