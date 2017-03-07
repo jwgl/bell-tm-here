@@ -2,12 +2,10 @@ package cn.edu.bnuz.bell.here
 
 import cn.edu.bnuz.bell.http.ForbiddenException
 import cn.edu.bnuz.bell.http.NotFoundException
-import cn.edu.bnuz.bell.master.Term
-import cn.edu.bnuz.bell.organization.Student
+import cn.edu.bnuz.bell.operation.ScheduleService
+import cn.edu.bnuz.bell.organization.StudentService
 import cn.edu.bnuz.bell.security.SecurityService
 import cn.edu.bnuz.bell.service.DataAccessService
-import cn.edu.bnuz.bell.tm.common.operation.ScheduleService
-import cn.edu.bnuz.bell.tm.common.organization.StudentService
 import grails.transaction.Transactional
 
 @Transactional

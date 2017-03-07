@@ -2,9 +2,9 @@ package cn.edu.bnuz.bell.here
 
 import cn.edu.bnuz.bell.http.ForbiddenException
 import cn.edu.bnuz.bell.http.ServiceExceptionHandler
+import cn.edu.bnuz.bell.master.TermService
+import cn.edu.bnuz.bell.organization.StudentService
 import cn.edu.bnuz.bell.security.SecurityService
-import cn.edu.bnuz.bell.tm.common.master.TermService
-import cn.edu.bnuz.bell.tm.common.organization.StudentService
 import org.springframework.security.access.prepost.PreAuthorize
 
 @PreAuthorize('hasAuthority("PERM_ATTENDANCE_LIST")')

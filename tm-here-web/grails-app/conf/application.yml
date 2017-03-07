@@ -86,7 +86,7 @@ server:
 
 spring:
     application:
-        name: '@info.app.name@'
+        name: tm-here-web
 
 eureka:
     client:

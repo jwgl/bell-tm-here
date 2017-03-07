@@ -1,9 +1,9 @@
 package cn.edu.bnuz.bell.here
 
 import cn.edu.bnuz.bell.http.ServiceExceptionHandler
+import cn.edu.bnuz.bell.master.TermService
+import cn.edu.bnuz.bell.operation.ScheduleService
 import cn.edu.bnuz.bell.profile.UserSettingService
-import cn.edu.bnuz.bell.tm.common.master.TermService
-import cn.edu.bnuz.bell.tm.common.operation.ScheduleService
 
 class RollcallFormController implements ServiceExceptionHandler {
     static final String ROLLCALL_SETTINGS_KEY = 'rollcall.settings'

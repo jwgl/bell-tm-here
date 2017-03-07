@@ -26,10 +26,8 @@ repositories {
 
 dependencyManagement {
     imports {
-        mavenBom "org.grails:grails-bom:$grailsVersion"
         mavenBom "org.springframework.cloud:spring-cloud-dependencies:$springCloudVersion"
     }
-    applyMavenExclusions false
 }
 
 dependencies {
@@ -62,10 +60,7 @@ dependencies {
 
 bootRun {
     jvmArgs('-Dspring.output.ansi.enabled=always')
-}
-
-springBoot {
-    executable = true
+    addResources = true
 }
 
 grails {

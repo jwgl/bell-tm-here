@@ -2,7 +2,7 @@ package cn.edu.bnuz.bell.here
 
 import cn.edu.bnuz.bell.operation.TaskStudent
 import cn.edu.bnuz.bell.security.SecurityService
-import cn.edu.bnuz.bell.tm.common.organization.StudentService
+import cn.edu.bnuz.bell.organization.StudentService
 import grails.transaction.Transactional
 
 @Transactional
