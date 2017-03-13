@@ -51,13 +51,14 @@ class Rollcall {
     Date dateModified
 
     static mapping = {
-        id generator: 'identity', comment: '考勤ID'
-        teacher comment: '考勤教师'
-        student comment: '学生'
+        comment      '考勤记录'
+        id           generator: 'identity', comment: '考勤ID'
+        teacher      comment: '考勤教师'
+        student      comment: '学生'
         taskSchedule comment: '安排'
-        week comment: '周次'
-        type comment: '类型'
-        dateCreated comment: '创建时间'
+        week         comment: '周次'
+        type         comment: '类型'
+        dateCreated  comment: '创建时间'
         dateModified comment: '修改时间'
     }
 }

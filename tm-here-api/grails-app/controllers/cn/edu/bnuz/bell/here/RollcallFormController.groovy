@@ -24,8 +24,8 @@ class RollcallFormController implements ServiceExceptionHandler {
                         currentWeek: term.currentWeek,
                 ],
                 schedules: schedules,
-                config: userSettingService.getMap(teacherId, ROLLCALL_SETTINGS_KEY),
-                view: userSettingService.getString(teacherId, ROLLCALL_VIEW_KEY, 'detail')
+                config: userSettingService.get(teacherId, ROLLCALL_SETTINGS_KEY, [:]),
+                view: userSettingService.get(teacherId, ROLLCALL_VIEW_KEY, 'detail')
         ])
     }
 
@@ -60,10 +60,10 @@ class RollcallFormController implements ServiceExceptionHandler {
     def settings(String teacherId) {
         switch (params.type) {
             case 'settings':
-                userSettingService.setMap(teacherId, ROLLCALL_SETTINGS_KEY, request.JSON as Map)
+                userSettingService.set(teacherId, ROLLCALL_SETTINGS_KEY, request.JSON as Map)
                 break
             case 'view':
-                userSettingService.setString(teacherId, ROLLCALL_VIEW_KEY, request.JSON.view as String)
+                userSettingService.set(teacherId, ROLLCALL_VIEW_KEY, request.JSON.view as String)
                 break
         }
         renderOk()
