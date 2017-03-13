@@ -30,6 +30,7 @@ class StudentLeaveItem implements Comparable<StudentLeaveItem> {
     static belongsTo = [form : StudentLeaveForm]
 
     static mapping = {
+        comment      '学生请假项'
         id           generator: 'identity', comment: '请假项ID'
         form         comment: '请假'
         week         comment: '周次'

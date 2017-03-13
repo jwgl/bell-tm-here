@@ -42,15 +42,16 @@ order by form.dateCreated desc
                 forms: forms,
                 count: FreeListenForm.countByStudent(Student.load(studentId)),
                 config: getDateConfig(),
-                notice: systemConfigService.getString(FreeListenForm.CONFIG_NOTICE),
+                notice: systemConfigService.get(FreeListenForm.CONFIG_NOTICE, ''),
         ]
     }
 
     def getDateConfig() {
+        def today = LocalDate.now()
         [
-                startDate: systemConfigService.getDate(FreeListenForm.CONFIG_START_DATE),
-                endDate: systemConfigService.getDate(FreeListenForm.CONFIG_END_DATE),
-                today: LocalDate.now(),
+                startDate: systemConfigService.get(FreeListenForm.CONFIG_START_DATE, today),
+                endDate: systemConfigService.get(FreeListenForm.CONFIG_END_DATE, today),
+                today: today,
         ]
     }
 
