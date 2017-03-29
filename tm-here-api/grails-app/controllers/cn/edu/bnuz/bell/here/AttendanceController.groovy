@@ -20,11 +20,13 @@ class AttendanceController implements ServiceExceptionHandler{
         def termId = termService.activeTerm.id
         if (securityService.hasRole('ROLE_ROLLCALL_DEPT_ADMIN')) {
             renderJson([
+                    termId      : termId,
                     adminClasses: attendanceService.adminClassesByDepartment(termId, securityService.departmentId),
                     students    : attendanceService.studentStatsByDepartment(termId, securityService.departmentId, offset, max)
             ])
         } else if (securityService.hasRole('ROLE_STUDENT_COUNSELLOR') || securityService.hasRole('ROLE_CLASS_SUPERVISOR')) {
             renderJson([
+                    termId      : termId,
                     adminClasses: attendanceService.adminClassesByAdministrator(termId, securityService.userId),
                     students    : attendanceService.studentStatsByAdministrator(termId, securityService.userId, offset, max),
             ])
@@ -59,11 +61,13 @@ class AttendanceController implements ServiceExceptionHandler{
         def termId = termService.activeTerm.id
         if (securityService.hasRole('ROLE_ROLLCALL_DEPT_ADMIN')) {
             renderJson([
+                    termId      : termId,
                     adminClasses: attendanceService.adminClassesByDepartment(termId, securityService.departmentId),
                     students    : attendanceService.studentStatsByAdminClass(termService.activeTerm.id, adminClassId, offset, max)
             ])
         } else if (securityService.hasRole('ROLE_STUDENT_COUNSELLOR') || securityService.hasRole('ROLE_CLASS_SUPERVISOR')) {
             renderJson([
+                    termId      : termId,
                     adminClasses: attendanceService.adminClassesByAdministrator(termId, securityService.userId),
                     students    : attendanceService.studentStatsByAdminClass(termService.activeTerm.id, adminClassId, offset, max)
             ])
