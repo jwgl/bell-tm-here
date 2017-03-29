@@ -1,15 +1,9 @@
 package cn.edu.bnuz.bell.here
 
-import cn.edu.bnuz.bell.operation.TaskStudent
-import cn.edu.bnuz.bell.security.SecurityService
-import cn.edu.bnuz.bell.organization.StudentService
 import grails.transaction.Transactional
 
 @Transactional
 class AttendanceService {
-    SecurityService securityService
-    StudentService studentService
-
     /**
      * 按学院统计学生考勤
      * @param termId 学期
@@ -166,7 +160,7 @@ order by total desc
      * @return 考勤统计 [studentId: [absent, late, early, leave]]
      */
     def statsByRollcall(RollcallCommand cmd) {
-        def results = TaskStudent.executeQuery '''
+        def results = StudentAttendance.executeQuery '''
 select attendance.student.id as id,
     count(case attendance.type when 1 then 1 end) as absent,
     count(case attendance.type when 2 then 1 when 5 then 1 end) as late,
@@ -207,7 +201,7 @@ group by attendance.student
      * @return [absent, late, early, leave]
      */
     def studentCourseClassStats(String studentId, UUID taskScheduleId) {
-        def results = TaskStudent.executeQuery '''
+        def results = StudentAttendance.executeQuery '''
 select count(case attendance.type when 1 then 1 end) as absent,
     count(case attendance.type when 2 then 1 when 5 then 1 end) as late,
     count(case attendance.type when 3 then 1 when 5 then 1 end) as early,

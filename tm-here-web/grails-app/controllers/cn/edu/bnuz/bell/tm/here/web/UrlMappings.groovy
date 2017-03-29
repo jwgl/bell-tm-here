@@ -19,7 +19,12 @@ class UrlMappings {
             "/freeListens"(resources: 'freeListenApproval', includes: ['index'])
         }
 
-        "/attendances"(resources: 'attendance', includes: ['index', 'show'])
+        "/attendances"(resources: 'attendance', includes: ['index', 'show']) {
+            collection {
+                "/statisReport"(controller: 'attendanceReport', action: 'statis', method: 'GET')
+                "/detailReport"(controller: 'attendanceReport', action: 'detail', method: 'GET')
+            }
+        }
 
         "/leaves"(resources: 'studentLeavePublic', includes: ['show'])
 

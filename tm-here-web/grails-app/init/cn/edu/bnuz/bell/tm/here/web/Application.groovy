@@ -2,6 +2,7 @@ package cn.edu.bnuz.bell.tm.here.web
 
 import cn.edu.bnuz.bell.config.ExternalConfigLoader
 import cn.edu.bnuz.bell.menu.module.EnableModuleMenu
+import cn.edu.bnuz.bell.report.EnableReportClient
 import grails.boot.GrailsApp
 import grails.boot.config.GrailsAutoConfiguration
 import org.springframework.boot.autoconfigure.SpringBootApplication
@@ -16,6 +17,7 @@ import org.springframework.security.oauth2.config.annotation.web.configuration.E
 @EnableEurekaClient
 @EnableGlobalMethodSecurity(prePostEnabled = true)
 @EnableModuleMenu
+@EnableReportClient
 class Application extends GrailsAutoConfiguration implements EnvironmentAware {
     static void main(String[] args) {
         GrailsApp.run(Application, args)
