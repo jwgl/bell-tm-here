@@ -1,7 +1,7 @@
 <html>
 <head>
     <meta name="layout" content="main"/>
-    <title>考勤统计</title>
+    <title>学生考勤统计</title>
     <asset:script src="/static/js/app/here/attendance/list.js"></asset:script>
 </head>
 <body>

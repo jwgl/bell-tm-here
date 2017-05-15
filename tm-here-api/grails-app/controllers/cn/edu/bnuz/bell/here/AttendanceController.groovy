@@ -7,6 +7,9 @@ import cn.edu.bnuz.bell.organization.StudentService
 import cn.edu.bnuz.bell.security.SecurityService
 import org.springframework.security.access.prepost.PreAuthorize
 
+/**
+ * 按部门/班主任/辅导员查询考勤情况。
+ */
 @PreAuthorize('hasAuthority("PERM_ATTENDANCE_LIST")')
 class AttendanceController implements ServiceExceptionHandler{
     AttendanceService attendanceService

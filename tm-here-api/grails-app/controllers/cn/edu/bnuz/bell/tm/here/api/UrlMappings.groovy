@@ -13,6 +13,10 @@ class UrlMappings {
                 "/workitems"(resources: 'freeListenCheck', includes: ['show', 'patch'])
                 "/approvers"(controller: 'freeListenCheck', action: 'approvers', method: 'GET')
             }
+            "/courseClasses"(resources: 'courseClass', includes: ['index', 'show']) {
+                "/code"(controller: 'courseClass', action: 'code', method: 'GET')
+                "/attendances"(resources: 'courseClassAttendance', includes: ['index', 'show'])
+            }
         }
 
         "/students"(resources: 'student', includes: []) {

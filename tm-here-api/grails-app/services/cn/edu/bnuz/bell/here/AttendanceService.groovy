@@ -195,6 +195,29 @@ group by attendance.student
     }
 
     /**
+     * 按教学班统计考勤次数
+     * @param courseClassId 教学班统计
+     * @return 考勤统计
+     */
+    def statsByCourseClass(UUID courseClassId) {
+        StudentAttendance.executeQuery '''
+select new map(
+  attendance.student.id as id,
+  sum(case when type = 1 then schedule.totalSection else 0 end) as absent,
+  sum(case when type = 2 then 0.5 else 0 end) as late,
+  sum(case when type in (3, 5) then schedule.totalSection else 0 end) as early,
+  sum(case when type = 4 then schedule.totalSection else 0 end) as leave
+)
+from StudentAttendance attendance
+join attendance.taskSchedule schedule
+join schedule.task task
+where task.courseClass.id = :courseClassId
+and attendance.valid = true
+group by attendance.student
+''', [courseClassId: courseClassId]
+    }
+
+    /**
      * 按安排统计指定学生的教学班考勤次数统计
      * @param studentId 学生ID
      * @param taskScheduleId 安排ID
@@ -227,6 +250,7 @@ and attendance.valid = true
      * 获取学生指定学期的考勤情况
      * @param studentId 学生ID
      * @param termId 学期
+     * @return 考勤情况
      */
     def getStudentAttendances(String studentId, Integer termId) {
         StudentAttendance.executeQuery '''
@@ -252,5 +276,39 @@ where sa.term.id = :termId
 and sa.student.id = :studentId
 order by week, dayOfWeek, startSection
 ''', [termId: termId, studentId: studentId]
+    }
+
+    /**
+     * 获取学生指定教学班的考勤情况
+     * @param studentId 学生ID
+     * @param courseClassId 教学班ID
+     * @return 考勤情况
+     */
+    def getStudentAttendances(String studentId, UUID courseClassId) {
+        StudentAttendance.executeQuery '''
+select new map (
+  sa.week as week,
+  teacher.name as teacher,
+  schedule.dayOfWeek as dayOfWeek,
+  schedule.startSection as startSection,
+  schedule.totalSection as totalSection,
+  sa.type as type,
+  course.name as course,
+  courseItem.name as courseItem,
+  sa.freeListenForm.id as freeListen,
+  sa.studentLeaveForm.id as studentLeave,
+  sa.valid as valid
+)
+from StudentAttendance sa
+join sa.teacher teacher
+join sa.taskSchedule schedule
+join schedule.task task
+join task.courseClass courseClass
+join courseClass.course course
+left join task.courseItem courseItem
+where courseClass.id = :courseClassId
+and sa.student.id = :studentId
+order by week, dayOfWeek, startSection
+''', [courseClassId: courseClassId, studentId: studentId]
     }
 }
