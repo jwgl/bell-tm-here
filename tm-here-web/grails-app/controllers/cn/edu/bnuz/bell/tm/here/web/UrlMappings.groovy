@@ -6,6 +6,9 @@ class UrlMappings {
         "/teachers"(resources: 'teacher', includes: []) {
             "/rollcalls"(resources: 'rollcallForm', includes: ['index'])
             "/freeListens"(resources: 'freeListenCheck', includes: ['index'])
+            "/courseClasses"(resources: 'courseClass', includes: ['index']) {
+                "/report"(controller: 'courseClass', action: 'report', method: 'GET')
+            }
         }
 
         "/students"(resources: 'student', 'includes': []) {
