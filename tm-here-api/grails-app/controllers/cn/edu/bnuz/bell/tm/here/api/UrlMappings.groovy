@@ -4,9 +4,10 @@ class UrlMappings {
 
     static mappings = {
         "/teachers"(resources: 'teacher', includes: []) {
-            "/rollcalls"(resources: 'rollcallForm') {
-                collection {
-                    "/settings"(controller: 'rollcallForm', action: 'settings', method: 'PUT')
+            "/timeslots"(resources: 'teacherTimeslot', includes: ['index', 'show']) {
+                "/weeks"(resources: 'week', includes: []) {
+                    "/rollcalls"(resources: 'rollcall')
+                    "/attendances"(resources: 'timeslotAttendance', includes: ['index', 'show'])
                 }
             }
             "/freeListens"(resources: 'freeListenCheck', includes: ['index']) {
@@ -17,6 +18,7 @@ class UrlMappings {
                 "/code"(controller: 'courseClass', action: 'code', method: 'GET')
                 "/attendances"(resources: 'courseClassAttendance', includes: ['index', 'show'])
             }
+            "/settings"(resources: 'teacherSetting', includes: ['update'])
         }
 
         "/students"(resources: 'student', includes: []) {
