@@ -96,7 +96,7 @@ class StudentLeavePublicService {
      * @param cmd 考勤命令
      * @return 请假列表
      */
-    def listByRollcall(RollcallCommand cmd) {
+    def listByTimeslot(TeacherTimeslotCommand cmd) {
         StudentLeaveForm.executeQuery '''
 select new map(
   form.id as id,

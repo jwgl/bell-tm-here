@@ -83,7 +83,7 @@ where form.status = 'APPROVED'
      * @param cmd
      * @return 免听列表
      */
-    def listByRollcall(RollcallCommand cmd) {
+    def listByTimeslot(TeacherTimeslotCommand cmd) {
         FreeListenForm.executeQuery '''
 select new map(
   form.id as id,

@@ -1,0 +1,155 @@
+package cn.edu.bnuz.bell.here
+
+import cn.edu.bnuz.bell.http.BadRequestException
+import cn.edu.bnuz.bell.http.ForbiddenException
+import cn.edu.bnuz.bell.http.NotFoundException
+import cn.edu.bnuz.bell.operation.TaskSchedule
+import cn.edu.bnuz.bell.operation.TaskStudent
+import cn.edu.bnuz.bell.organization.Student
+import cn.edu.bnuz.bell.organization.Teacher
+import grails.gorm.transactions.Transactional
+
+@Transactional
+class RollcallService {
+    StudentLeavePublicService studentLeavePublicService
+    FreeListenPublicService freeListenPublicService
+
+    def list(TeacherTimeslotCommand cmd) {
+        println(cmd as Map)
+        def taskScheduleIds = TaskSchedule.executeQuery '''
+select taskSchedule.id
+from CourseClass courseClass
+join courseClass.tasks task
+join task.schedules taskSchedule
+where courseClass.term.id = :termId
+  and taskSchedule.teacher.id = :teacherId
+  and :week between taskSchedule.startWeek and taskSchedule.endWeek
+  and (taskSchedule.oddEven = 0
+   or taskSchedule.oddEven = 1 and :week % 2 = 1
+   or taskSchedule.oddEven = 2 and :week % 2 = 0)
+  and taskSchedule.dayOfWeek = :dayOfWeek
+  and taskSchedule.startSection = :startSection
+''', cmd as Map
+
+        def students = TaskStudent.executeQuery '''
+select new map (
+  student.id as id,
+  student.name as name,
+  subject.name as subject,
+  adminClass.name as adminClass,
+  taskSchedule.id as taskScheduleId
+)
+from Task task
+join task.schedules taskSchedule
+join task.students taskStudent
+join taskStudent.student student
+join student.major major
+join major.subject subject
+join student.adminClass adminClass
+where taskSchedule.id in (:taskScheduleIds)
+''', [taskScheduleIds: taskScheduleIds]
+
+        def rollcalls = Rollcall.executeQuery '''
+select new map (
+  rollcall.id as id,
+  rollcall.student.id as studentId,
+  rollcall.type as type
+)
+from Rollcall rollcall
+join rollcall.taskSchedule taskSchedule
+join taskSchedule.task task
+join task.students taskStudent
+where taskStudent.student = rollcall.student
+and rollcall.week = :week
+and taskSchedule.id in (:taskScheduleIds)
+''', [week: cmd.week, taskScheduleIds: taskScheduleIds]
+
+        def randomFactors = Rollcall.executeQuery('''
+select rollcall.student.id as studentId,
+       sum(case 
+         when rollcall.week = :week and rollcall.taskSchedule.id in (:taskScheduleIds) then 100
+         when type in (1, 2, 3, 5) then 1
+         else 0 
+       end) as factor
+from Rollcall rollcall
+join rollcall.taskSchedule taskSchedule
+join taskSchedule.task task
+join task.students taskStudent
+where rollcall.student = taskStudent.student
+  and task.courseClass.id in (
+    select courseClass.id
+    from CourseClass courseClass
+    join courseClass.tasks task
+    join task.schedules taskSchedule
+    where taskSchedule.id in (:taskScheduleIds)
+  )
+group by rollcall.student.id
+''', [week: cmd.week, taskScheduleIds: taskScheduleIds]).collectEntries {Object[]  item ->
+            [item[0], item[1]]
+        }
+
+        [
+                students     : students,
+                rollcalls    : rollcalls,
+                leaves       : studentLeavePublicService.listByTimeslot(cmd),
+                freeListens  : freeListenPublicService.listByTimeslot(cmd),
+                cancelExams  : [], // TODO Find cancel examine records
+                randomFactors: randomFactors,
+        ]
+    }
+
+    def create(String teacherId, RollcallCreateCommand cmd) {
+        def now = new Date()
+        def rollcall = new Rollcall(
+                teacher: Teacher.load(teacherId),
+                student: Student.load(cmd.studentId),
+                taskSchedule: TaskSchedule.load(cmd.taskScheduleId),
+                week: cmd.week,
+                type: cmd.type,
+                dateCreated: now,
+                dateModified: now,
+        )
+        rollcall.save()
+    }
+
+    def update(String teacherId, RollcallUpdateCommand cmd) {
+        def rollcall = Rollcall.get(cmd.id)
+
+        if (!rollcall) {
+            throw new NotFoundException()
+        }
+
+        if (rollcall.teacher.id != teacherId) {
+            throw new ForbiddenException()
+        }
+
+        if (!canUpdate(rollcall)) {
+            throw new BadRequestException()
+        }
+
+        rollcall.type = cmd.type
+        rollcall.save()
+    }
+
+    def delete(String teacherId, Long id) {
+        def rollcall = Rollcall.get(id)
+
+        if (!rollcall) {
+            throw new NotFoundException()
+        }
+
+        if (rollcall.teacher.id != teacherId) {
+            throw new ForbiddenException()
+        }
+
+        if (!canUpdate(rollcall)) {
+            throw new BadRequestException()
+        }
+
+        rollcall.delete()
+    }
+
+    def canUpdate(Rollcall rollcall) {
+        return true
+    }
+}
