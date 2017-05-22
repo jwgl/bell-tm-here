@@ -19,7 +19,6 @@ class RollcallController {
     def save(String teacherId) {
         def cmd = new RollcallCreateCommand()
         bindData(cmd, request.JSON)
-        cmd.termId = termService.activeTerm.id
         renderJson rollcallService.create(teacherId, cmd)
     }
 
