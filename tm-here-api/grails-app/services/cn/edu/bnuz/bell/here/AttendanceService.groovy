@@ -1,9 +1,15 @@
 package cn.edu.bnuz.bell.here
 
 import grails.transaction.Transactional
+import org.hibernate.SessionFactory
+import org.hibernate.result.ResultSetOutput
+
+import javax.persistence.ParameterMode
 
 @Transactional
 class AttendanceService {
+    SessionFactory sessionFactory
+
     /**
      * 按学院统计学生考勤
      * @param termId 学期
@@ -12,30 +18,30 @@ class AttendanceService {
      * @param max 最大记录数
      * @return 考勤统计
      */
-    def studentStatsByDepartment(Integer termId, String departmentId, Integer offset, Integer max) {
-        StudentAttendance.executeQuery '''
-select new map (
-  student.id as id,
-  student.name as name,
-  adminClass.name as adminClass,
-  sum(case type when 1 then schedule.totalSection else 0 end) as absent,
-  sum(case type when 2 then 0.5 else 0 end) as late,
-  sum(case type when 3 then schedule.totalSection when 5 then schedule.totalSection else 0 end) as early,
-  sum(case type when 1 then schedule.totalSection else 0 end) +
-  sum(case type when 2 then 0.5 else 0 end) +
-  sum(case type when 3 then schedule.totalSection when 5 then schedule.totalSection else 0 end) as total,
-  sum(case type when 4 then schedule.totalSection else 0 end) as leave
-)
-from StudentAttendance sa
-join sa.student student
-join sa.taskSchedule schedule
-join student.adminClass adminClass
-where sa.term.id = :termId
-and student.department.id = :departmentId
-and sa.valid = true
-group by student, adminClass
-order by total desc
-''', [termId: termId, departmentId: departmentId], [offset: offset, max: max]
+    def studentStatsByDepartment(Integer termId, String departmentId) {
+        def session = sessionFactory.currentSession
+        def query = session.createStoredProcedureCall('sp_get_student_attendance_stats_by_department')
+        def outputs = query.with {
+            [
+                    p_term_id      : termId,
+                    p_department_id: departmentId,
+            ].each { k, v ->
+                registerParameter(k, v.class, ParameterMode.IN).bindValue(v)
+            }
+            outputs
+        }
+        ((ResultSetOutput) outputs.current).resultList.collect { item ->
+            [
+                    id        : item[0],
+                    name      : item[1],
+                    adminClass: item[2],
+                    absent    : item[3],
+                    late      : item[4],
+                    early     : item[5],
+                    total     : item[6],
+                    leave     : item[7],
+            ]
+        }
     }
 
     /**
@@ -45,21 +51,24 @@ order by total desc
      * @return 教学班学生数
      */
     def adminClassesByDepartment(Integer termId, String departmentId) {
-        StudentAttendance.executeQuery '''
-select new map (
-  adminClass.id as id,
-  adminClass.name as name,
-  count(distinct student) as count
-)
-from StudentAttendance sa
-join sa.student student
-join student.adminClass adminClass
-where sa.term.id = :termId
-and student.department.id = :departmentId
-and sa.valid = true
-group by adminClass
-order by count(distinct student) desc
-''', [termId: termId, departmentId: departmentId]
+        def session = sessionFactory.currentSession
+        def query = session.createStoredProcedureCall('sp_get_admin_class_attendance_stats_by_department')
+        def outputs = query.with {
+            [
+                    p_term_id      : termId,
+                    p_department_id: departmentId,
+            ].each { k, v ->
+                registerParameter(k, v.class, ParameterMode.IN).bindValue(v)
+            }
+            outputs
+        }
+        ((ResultSetOutput) outputs.current).resultList.collect { item ->
+            [
+                    id   : item[0],
+                    name : item[1],
+                    count: item[2],
+            ]
+        }
     }
 
     /**
@@ -70,30 +79,30 @@ order by count(distinct student) desc
      * @param max 最大记录数
      * @return 考勤统计
      */
-    def studentStatsByAdministrator(Integer termId, String userId, Integer offset, Integer max) {
-        StudentAttendance.executeQuery '''
-select new map (
-  student.id as id,
-  student.name as name,
-  adminClass.name as adminClass,
-  sum(case type when 1 then schedule.totalSection else 0 end) as absent,
-  sum(case type when 2 then 0.5 else 0 end) as late,
-  sum(case type when 3 then schedule.totalSection when 5 then schedule.totalSection else 0 end) as early,
-  sum(case type when 1 then schedule.totalSection else 0 end) +
-  sum(case type when 2 then 0.5 else 0 end) +
-  sum(case type when 3 then schedule.totalSection when 5 then schedule.totalSection else 0 end) as total,
-  sum(case type when 4 then schedule.totalSection else 0 end) as leave
-)
-from StudentAttendance sa
-join sa.student student
-join sa.taskSchedule schedule
-join student.adminClass adminClass
-where sa.term.id = :termId
-and (adminClass.counsellor.id = :userId or adminClass.supervisor.id = :userId) 
-and sa.valid = true
-group by student, adminClass
-order by total desc
-''', [termId: termId, userId: userId], [offset: offset, max: max]
+    def studentStatsByAdministrator(Integer termId, String userId) {
+        def session = sessionFactory.currentSession
+        def query = session.createStoredProcedureCall('sp_get_student_attendance_stats_by_administrator')
+        def outputs = query.with {
+            [
+                    p_term_id: termId,
+                    p_user_id: userId,
+            ].each { k, v ->
+                registerParameter(k, v.class, ParameterMode.IN).bindValue(v)
+            }
+            outputs
+        }
+        ((ResultSetOutput) outputs.current).resultList.collect { item ->
+            [
+                    id        : item[0],
+                    name      : item[1],
+                    adminClass: item[2],
+                    absent    : item[3],
+                    late      : item[4],
+                    early     : item[5],
+                    total     : item[6],
+                    leave     : item[7],
+            ]
+        }
     }
 
     /**
@@ -103,21 +112,24 @@ order by total desc
      * @return 教学班学生数
      */
     def adminClassesByAdministrator(Integer termId, String userId) {
-        StudentAttendance.executeQuery '''
-select new map (
-  adminClass.id as id,
-  adminClass.name as name,
-  count(distinct student) as count
-)
-from StudentAttendance sa
-join sa.student student
-join student.adminClass adminClass
-where sa.term.id = :termId
-and (adminClass.counsellor.id = :userId or adminClass.supervisor.id = :userId) 
-and sa.valid = true
-group by adminClass
-order by count(distinct student) desc
-''', [termId: termId, userId: userId]
+        def session = sessionFactory.currentSession
+        def query = session.createStoredProcedureCall('sp_get_admin_class_attendance_stats_by_administrator')
+        def outputs = query.with {
+            [
+                    p_term_id: termId,
+                    p_user_id: userId,
+            ].each { k, v ->
+                registerParameter(k, v.class, ParameterMode.IN).bindValue(v)
+            }
+            outputs
+        }
+        ((ResultSetOutput) outputs.current).resultList.collect { item ->
+            [
+                    id   : item[0],
+                    name : item[1],
+                    count: item[2],
+            ]
+        }
     }
 
     /**
@@ -128,30 +140,31 @@ order by count(distinct student) desc
      * @param max 最大记录数
      * @return 考勤统计
      */
-    def studentStatsByAdminClass(Integer termId, Long adminClassId, Integer offset, Integer max) {
-        StudentAttendance.executeQuery '''
-select new map (
-  student.id as id,
-  student.name as name,
-  adminClass.name as adminClass,
-  sum(case type when 1 then schedule.totalSection else 0 end) as absent,
-  sum(case type when 2 then 0.5 else 0 end) as late,
-  sum(case type when 3 then schedule.totalSection when 5 then schedule.totalSection else 0 end) as early,
-  sum(case type when 1 then schedule.totalSection else 0 end) +
-  sum(case type when 2 then 0.5 else 0 end) +
-  sum(case type when 3 then schedule.totalSection when 5 then schedule.totalSection else 0 end) as total,
-  sum(case type when 4 then schedule.totalSection else 0 end) as leave
-)
-from StudentAttendance sa
-join sa.student student
-join sa.taskSchedule schedule
-join student.adminClass adminClass
-where sa.term.id = :termId
-and adminClass.id = :adminClassId
-and sa.valid = true
-group by student, adminClass
-order by total desc
-''', [termId: termId, adminClassId: adminClassId], [offset: offset, max: max]
+    def studentStatsByAdminClass(Integer termId, Long adminClassId) {
+        def session = sessionFactory.currentSession
+        def query = session.createStoredProcedureCall('sp_get_student_attendance_stats_by_admin_class')
+        def outputs = query.with {
+            [
+                    p_term_id       : termId,
+                    p_admin_class_id: adminClassId,
+            ].each { k, v ->
+                registerParameter(k, v.class, ParameterMode.IN).bindValue(v)
+            }
+            outputs
+        }
+
+        ((ResultSetOutput) outputs.current).resultList.collect { item ->
+            [
+                    id        : item[0],
+                    name      : item[1],
+                    adminClass: item[2],
+                    absent    : item[3],
+                    late      : item[4],
+                    early     : item[5],
+                    total     : item[6],
+                    leave     : item[7],
+            ]
+        }
     }
 
     /**
@@ -160,21 +173,26 @@ order by total desc
      * @return 考勤统计
      */
     def statsByCourseClass(UUID courseClassId) {
-        StudentAttendance.executeQuery '''
-select new map(
-  attendance.student.id as id,
-  sum(case when type = 1 then schedule.totalSection else 0 end) as absent,
-  sum(case when type = 2 then 0.5 else 0 end) as late,
-  sum(case when type in (3, 5) then schedule.totalSection else 0 end) as early,
-  sum(case when type = 4 then schedule.totalSection else 0 end) as leave
-)
-from StudentAttendance attendance
-join attendance.taskSchedule schedule
-join schedule.task task
-where task.courseClass.id = :courseClassId
-and attendance.valid = true
-group by attendance.student
-''', [courseClassId: courseClassId]
+        def session = sessionFactory.currentSession
+        def query = session.createStoredProcedureCall('sp_get_student_attendance_stats_by_course_class')
+        def outputs = query.with {
+            [
+                    p_course_class_id: courseClassId,
+            ].each { k, v ->
+                registerParameter(k, v.class, ParameterMode.IN).bindValue(v)
+            }
+            outputs
+        }
+        ((ResultSetOutput) outputs.current).resultList.collect { item ->
+            [
+                    id    : item[0],
+                    absent: item[1],
+                    late  : item[2],
+                    early : item[3],
+                    total : item[4],
+                    leave : item[5],
+            ]
+        }
     }
 
     /**
@@ -183,30 +201,69 @@ group by attendance.student
      * @param termId 学期
      * @return 考勤情况
      */
-    def getStudentAttendances(String studentId, Integer termId) {
-        StudentAttendance.executeQuery '''
-select new map (
-  sa.week as week,
-  teacher.name as teacher,
-  schedule.dayOfWeek as dayOfWeek,
-  schedule.startSection as startSection,
-  schedule.totalSection as totalSection,
-  sa.type as type,
-  course.name as course,
-  sa.freeListenForm.id as freeListen,
-  sa.studentLeaveForm.id as studentLeave,
-  sa.valid as valid
-)
-from StudentAttendance sa
-join sa.teacher teacher
-join sa.taskSchedule schedule
-join schedule.task task
-join task.courseClass courseClass
-join courseClass.course course
-where sa.term.id = :termId
-and sa.student.id = :studentId
-order by week, dayOfWeek, startSection
-''', [termId: termId, studentId: studentId]
+    def getStudentAttendances(Integer termId, String studentId) {
+        [
+                rollcalls    : getRollcallDetails(termId, studentId),
+                studentLeaves: getStudentLeaveDetails(termId, studentId),
+        ]
+    }
+
+    private getRollcallDetails(Integer termId, String studentId) {
+        def session = sessionFactory.currentSession
+        def query = session.createStoredProcedureCall('sp_get_rollcall_details_by_student')
+        def outputs = query.with {
+            [
+                    p_term_id   : termId,
+                    p_student_id: studentId,
+            ].each { k, v ->
+                registerParameter(k, v.class, ParameterMode.IN).bindValue(v)
+            }
+            outputs
+        }
+
+        ((ResultSetOutput) outputs.current).resultList.collect { item ->
+            [
+                    week        : item[0],
+                    dayOfWeek   : item[1],
+                    startSection: item[2],
+                    totalSection: item[3],
+                    type        : item[4],
+                    course      : item[5],
+                    courseItem  : item[6],
+                    teacher     : item[7],
+                    studentLeave: item[8],
+                    freeListen  : item[9],
+            ]
+        }
+    }
+
+    private getStudentLeaveDetails(Integer termId, String studentId) {
+        def session = sessionFactory.currentSession
+        def query = session.createStoredProcedureCall('sp_get_student_leave_details_by_student')
+        def outputs = query.with {
+            [
+                    p_term_id   : termId,
+                    p_student_id: studentId,
+            ].each { k, v ->
+                registerParameter(k, v.class, ParameterMode.IN).bindValue(v)
+            }
+            outputs
+        }
+
+        ((ResultSetOutput) outputs.current).resultList.collect { item ->
+            [
+                    week        : item[0],
+                    dayOfWeek   : item[1],
+                    startSection: item[2],
+                    totalSection: item[3],
+                    type        : item[4],
+                    course      : item[5],
+                    courseItem  : item[6],
+                    teacher     : item[7],
+                    studentLeave: item[8],
+                    freeListen  : item[9],
+            ]
+        }
     }
 
     /**
@@ -215,31 +272,70 @@ order by week, dayOfWeek, startSection
      * @param courseClassId 教学班ID
      * @return 考勤情况
      */
-    def getStudentAttendances(String studentId, UUID courseClassId) {
-        StudentAttendance.executeQuery '''
-select new map (
-  sa.week as week,
-  teacher.name as teacher,
-  schedule.dayOfWeek as dayOfWeek,
-  schedule.startSection as startSection,
-  schedule.totalSection as totalSection,
-  sa.type as type,
-  course.name as course,
-  courseItem.name as courseItem,
-  sa.freeListenForm.id as freeListen,
-  sa.studentLeaveForm.id as studentLeave,
-  sa.valid as valid
-)
-from StudentAttendance sa
-join sa.teacher teacher
-join sa.taskSchedule schedule
-join schedule.task task
-join task.courseClass courseClass
-join courseClass.course course
-left join task.courseItem courseItem
-where courseClass.id = :courseClassId
-and sa.student.id = :studentId
-order by week, dayOfWeek, startSection
-''', [courseClassId: courseClassId, studentId: studentId]
+    def getStudentAttendances(UUID courseClassId, String studentId) {
+        println('leave details')
+
+        [
+                rollcalls    : getRollcallDetails(courseClassId, studentId),
+                studentLeaves: getStudentLeaveDetails(courseClassId, studentId),
+        ]
+    }
+
+    private getRollcallDetails(UUID courseClassId, String studentId) {
+        def session = sessionFactory.currentSession
+        def query = session.createStoredProcedureCall('sp_get_rollcall_details_by_course_class_student')
+        def outputs = query.with {
+            [
+                    p_course_class_id: courseClassId,
+                    p_student_id     : studentId,
+            ].each { k, v ->
+                registerParameter(k, v.class, ParameterMode.IN).bindValue(v)
+            }
+            outputs
+        }
+
+        ((ResultSetOutput) outputs.current).resultList.collect { item ->
+            [
+                    week        : item[0],
+                    dayOfWeek   : item[1],
+                    startSection: item[2],
+                    totalSection: item[3],
+                    type        : item[4],
+                    course      : item[5],
+                    courseItem  : item[6],
+                    teacher     : item[7],
+                    studentLeave: item[8],
+                    freeListen  : item[9],
+            ]
+        }
+    }
+
+    private getStudentLeaveDetails(UUID courseClassId, String studentId) {
+        def session = sessionFactory.currentSession
+        def query = session.createStoredProcedureCall('sp_get_student_leave_details_by_course_class_student')
+        def outputs = query.with {
+            [
+                    p_course_class_id: courseClassId,
+                    p_student_id     : studentId,
+            ].each { k, v ->
+                registerParameter(k, v.class, ParameterMode.IN).bindValue(v)
+            }
+            outputs
+        }
+
+        ((ResultSetOutput) outputs.current).resultList.collect { item ->
+            [
+                    week        : item[0],
+                    dayOfWeek   : item[1],
+                    startSection: item[2],
+                    totalSection: item[3],
+                    type        : item[4],
+                    course      : item[5],
+                    courseItem  : item[6],
+                    teacher     : item[7],
+                    studentLeave: item[8],
+                    freeListen  : item[9],
+            ]
+        }
     }
 }

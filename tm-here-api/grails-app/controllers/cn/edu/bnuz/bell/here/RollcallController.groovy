@@ -19,20 +19,17 @@ class RollcallController {
     def save(String teacherId) {
         def cmd = new RollcallCreateCommand()
         bindData(cmd, request.JSON)
-        Rollcall rollcall = rollcallService.create(teacherId, cmd)
-        renderJson([id: rollcall.id])
+        renderJson rollcallService.create(teacherId, cmd)
     }
 
     def update(String teacherId, Long id) {
         def cmd = new RollcallUpdateCommand()
         bindData(cmd, request.JSON)
         cmd.id = id
-        rollcallService.update(teacherId, cmd)
-        renderOk()
+        renderJson rollcallService.update(teacherId, cmd)
     }
 
     def delete(String teacherId, Long id) {
-        rollcallService.delete(teacherId, id)
-        renderOk()
+        renderJson rollcallService.delete(teacherId, id)
     }
 }

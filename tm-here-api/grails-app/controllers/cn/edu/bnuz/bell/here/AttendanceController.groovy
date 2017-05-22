@@ -17,66 +17,64 @@ class AttendanceController implements ServiceExceptionHandler{
     SecurityService securityService
     StudentService studentService
 
+    /**
+     * 管理人员查看考勤统计
+     * @return
+     */
     def index() {
-        def offset = params.int('offset') ?: 0
-        def max = params.int('max') ?: 20
         def termId = termService.activeTerm.id
         if (securityService.hasRole('ROLE_ROLLCALL_DEPT_ADMIN')) {
-            renderJson([
-                    termId      : termId,
-                    adminClasses: attendanceService.adminClassesByDepartment(termId, securityService.departmentId),
-                    students    : attendanceService.studentStatsByDepartment(termId, securityService.departmentId, offset, max)
-            ])
+            renderJson attendanceService.studentStatsByDepartment(termId, securityService.departmentId)
         } else if (securityService.hasRole('ROLE_STUDENT_COUNSELLOR') || securityService.hasRole('ROLE_CLASS_SUPERVISOR')) {
-            renderJson([
-                    termId      : termId,
-                    adminClasses: attendanceService.adminClassesByAdministrator(termId, securityService.userId),
-                    students    : attendanceService.studentStatsByAdministrator(termId, securityService.userId, offset, max),
-            ])
+            renderJson attendanceService.studentStatsByAdministrator(termId, securityService.userId)
         } else {
             throw new ForbiddenException()
         }
     }
 
     /**
-     * 管理人员查看
+     * 管理人员查看考勤详情
      * @param id 学号
      */
     def show(String id) {
         def termId = termService.activeTerm.id
         def userId = securityService.userId
-        def studentId = id
-        if (securityService.hasRole('ROLE_ROLLCALL_DEPT_ADMIN') && securityService.departmentId == studentService.getDepartment(studentId)?.id ||
-            securityService.hasRole('ROLE_STUDENT_COUNSELLOR') && userId == studentService.getCounsellor(studentId)?.id ||
-            securityService.hasRole('ROLE_CLASS_SUPERVISOR') && userId == studentService.getSupervisor(studentId)?.id) {
-            renderJson([
-                    list :attendanceService.getStudentAttendances(studentId, termId),
-                    student: studentService.getStudentInfo(studentId)
-            ])
+        if (securityService.hasRole('ROLE_ROLLCALL_DEPT_ADMIN') &&
+            securityService.departmentId == studentService.getDepartment(id)?.id ||
+            securityService.hasRole('ROLE_STUDENT_COUNSELLOR') &&
+            userId == studentService.getCounsellor(id)?.id ||
+            securityService.hasRole('ROLE_CLASS_SUPERVISOR') &&
+            userId == studentService.getSupervisor(id)?.id) {
+            renderJson attendanceService.getStudentAttendances(termId, id)
         } else {
             throw new ForbiddenException()
         }
     }
 
+    /**
+     * 获取教学班学生考勤统计
+     * @param adminClassId 教学班ID
+     */
     def adminClass(Long adminClassId) {
-        def offset = params.int('offset') ?: 0
-        def max = params.int('max') ?: 20
         def termId = termService.activeTerm.id
+        renderJson attendanceService.studentStatsByAdminClass(termId, adminClassId)
+    }
+
+    /**
+     * 获取教学班统计
+     */
+    def adminClasses() {
+        def termId = termService.activeTerm.id
+        def adminClasses
         if (securityService.hasRole('ROLE_ROLLCALL_DEPT_ADMIN')) {
-            renderJson([
-                    termId      : termId,
-                    adminClasses: attendanceService.adminClassesByDepartment(termId, securityService.departmentId),
-                    students    : attendanceService.studentStatsByAdminClass(termService.activeTerm.id, adminClassId, offset, max)
-            ])
+            adminClasses = attendanceService.adminClassesByDepartment(termId, securityService.departmentId)
         } else if (securityService.hasRole('ROLE_STUDENT_COUNSELLOR') || securityService.hasRole('ROLE_CLASS_SUPERVISOR')) {
-            renderJson([
-                    termId      : termId,
-                    adminClasses: attendanceService.adminClassesByAdministrator(termId, securityService.userId),
-                    students    : attendanceService.studentStatsByAdminClass(termService.activeTerm.id, adminClassId, offset, max)
-            ])
+            adminClasses = attendanceService.adminClassesByAdministrator(termId, securityService.userId)
         } else {
             throw new ForbiddenException()
         }
+
+        renderJson([termId: termId, adminClasses: adminClasses])
     }
 
     /**
@@ -85,10 +83,9 @@ class AttendanceController implements ServiceExceptionHandler{
      */
     @PreAuthorize('hasAuthority("PERM_ATTENDANCE_ITEM")')
     def student(String studentId) {
+        def termId = termService.activeTerm.id
         if (studentId == securityService.userId) {
-            renderJson([
-                    list: attendanceService.getStudentAttendances(studentId, termService.activeTerm.id),
-            ])
+            renderJson attendanceService.getStudentAttendances(termId, studentId)
         } else {
             throw new ForbiddenException()
         }
