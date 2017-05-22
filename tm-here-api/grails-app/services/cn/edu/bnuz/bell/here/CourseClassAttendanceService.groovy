@@ -32,6 +32,6 @@ class CourseClassAttendanceService {
             throw new ForbiddenException()
         }
 
-        attendanceService.getStudentAttendances(studentId, courseClassId)
+        attendanceService.getStudentAttendances(courseClassId, studentId)
     }
 }

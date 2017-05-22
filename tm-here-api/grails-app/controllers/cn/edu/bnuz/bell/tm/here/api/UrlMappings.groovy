@@ -44,7 +44,11 @@ class UrlMappings {
             "/attendances"(controller: 'attendance', action: 'adminClass', method: 'GET')
         }
 
-        "/attendances"(resources: 'attendance', includes: ['index', 'show'])
+        "/attendances"(resources: 'attendance', includes: ['index', 'show']) {
+            collection {
+                "/adminClasses"(controller: 'attendance', action: 'adminClasses', method: 'GET')
+            }
+        }
 
         "/leaves"(resources: 'studentLeavePublic', includes: ['show'])
 

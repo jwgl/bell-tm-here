@@ -2,9 +2,9 @@
 <head>
     <meta name="layout" content="main"/>
     <title>学生考勤统计</title>
-    <asset:script src="/static/js/app/here/attendance/list.js"></asset:script>
+    <asset:script src="/static/js/app/here/attendance/admin-class.js"></asset:script>
 </head>
 <body>
-    <attendance-list-container></attendance-list-container>
+    <admin-class-list-container></admin-class-list-container>
 </body>
 </html>
