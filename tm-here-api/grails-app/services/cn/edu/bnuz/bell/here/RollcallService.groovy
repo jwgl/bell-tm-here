@@ -16,7 +16,6 @@ class RollcallService {
     FreeListenPublicService freeListenPublicService
 
     def list(TeacherTimeslotCommand cmd) {
-        println(cmd as Map)
         def taskScheduleIds = TaskSchedule.executeQuery '''
 select taskSchedule.id
 from CourseClass courseClass
