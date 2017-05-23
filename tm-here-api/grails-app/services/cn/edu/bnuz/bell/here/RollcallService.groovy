@@ -1,5 +1,6 @@
 package cn.edu.bnuz.bell.here
 
+import cn.edu.bnuz.bell.here.dto.TimeslotAttendanceStats
 import cn.edu.bnuz.bell.http.BadRequestException
 import cn.edu.bnuz.bell.http.ForbiddenException
 import cn.edu.bnuz.bell.http.NotFoundException
@@ -8,16 +9,11 @@ import cn.edu.bnuz.bell.operation.TaskStudent
 import cn.edu.bnuz.bell.organization.Student
 import cn.edu.bnuz.bell.organization.Teacher
 import grails.gorm.transactions.Transactional
-import org.hibernate.SessionFactory
-import org.hibernate.result.ResultSetOutput
-
-import javax.persistence.ParameterMode
 
 @Transactional
 class RollcallService {
     StudentLeavePublicService studentLeavePublicService
     FreeListenPublicService freeListenPublicService
-    SessionFactory sessionFactory
 
     def list(TeacherTimeslotCommand cmd) {
         println(cmd as Map)
@@ -70,12 +66,12 @@ and taskSchedule.id in (:taskScheduleIds)
 ''', [week: cmd.week, taskScheduleIds: taskScheduleIds]
 
         [
-                students     : students,
-                rollcalls    : rollcalls,
-                leaves       : studentLeavePublicService.listByTimeslot(cmd),
-                freeListens  : freeListenPublicService.listByTimeslot(cmd),
-                cancelExams  : [], // TODO Find cancel examine records
-                attendances  : getStudentAttendaceByTimeslot(cmd),
+                students   : students,
+                rollcalls  : rollcalls,
+                leaves     : studentLeavePublicService.listByTimeslot(cmd),
+                freeListens: freeListenPublicService.listByTimeslot(cmd),
+                cancelExams: [], // TODO Find cancel examine records
+                attendances: TimeslotAttendanceStats.statsByTimeslot(cmd),
         ]
     }
 
@@ -94,7 +90,7 @@ and taskSchedule.id in (:taskScheduleIds)
 
         [
                 id         : rollcall.id,
-                attendances: getStudentAttendanceByRollcall(rollcall)
+                attendances: TimeslotAttendanceStats.statsByRollcall(rollcall)
         ]
     }
 
@@ -117,7 +113,7 @@ and taskSchedule.id in (:taskScheduleIds)
         rollcall.save(flush: true)
 
         [
-                attendances: getStudentAttendanceByRollcall(rollcall)
+                attendances: TimeslotAttendanceStats.statsByRollcall(rollcall)
         ]
     }
 
@@ -139,60 +135,11 @@ and taskSchedule.id in (:taskScheduleIds)
         rollcall.delete(flush: true)
 
         [
-                attendances: getStudentAttendanceByRollcall(rollcall)
+                attendances: TimeslotAttendanceStats.statsByRollcall(rollcall)
         ]
     }
 
     def canUpdate(Rollcall rollcall) {
         return true
-    }
-
-    /**
-     * 按时段命令统计考勤次数，按教学班汇总
-     * @param cmd 时段命令
-     * @return 考勤统计 [studentId: [absent, late, early, leave]]
-     */
-    def getStudentAttendaceByTimeslot(TeacherTimeslotCommand cmd) {
-        def session = sessionFactory.currentSession
-        def query = session.createStoredProcedureCall('sp_get_student_attendance_stats_by_timeslot')
-        def outputs = query.with {
-            [
-                    p_term_id      : cmd.termId,
-                    p_teacher_id   : cmd.teacherId,
-                    p_week         : cmd.week,
-                    p_day_of_week  : cmd.dayOfWeek,
-                    p_start_section: cmd.startSection,
-            ].each { k, v ->
-                registerParameter(k, v.class, ParameterMode.IN).bindValue(v)
-            }
-            outputs
-        }
-        ((ResultSetOutput) outputs.current).resultList.collectEntries { item ->
-            [item[0], item[1..4]]
-        }
-    }
-
-    /**
-     * 按安排统计指定学生的教学班考勤次数统计
-     * @param taskScheduleId 安排
-     * @param studentId 学生ID
-     * @return [absent, late, early, leave]
-     */
-    def getStudentAttendanceByRollcall(Rollcall rollcall) {
-        def session = sessionFactory.currentSession
-        def query = session.createStoredProcedureCall('sp_get_student_attendance_stats_by_task_schedule_student')
-        def outputs = query.with {
-            [
-                    p_task_schedule_id: rollcall.taskScheduleId,
-                    p_student_id      : rollcall.student.id
-            ].each { k, v ->
-                registerParameter(k, v.class, ParameterMode.IN).bindValue(v)
-            }
-            outputs
-        }
-
-        def results = ((ResultSetOutput) outputs.current).resultList
-
-        results ? results[0] : [0, 0, 0, 0]
     }
 }

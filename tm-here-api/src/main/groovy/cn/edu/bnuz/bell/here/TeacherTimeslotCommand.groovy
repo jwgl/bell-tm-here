@@ -1,8 +1,5 @@
 package cn.edu.bnuz.bell.here
 
-/**
- * Created by yanglin on 2017/5/17.
- */
 class TeacherTimeslotCommand {
     Integer termId
     String teacherId
