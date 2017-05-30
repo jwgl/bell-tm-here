@@ -59,15 +59,6 @@ class AttendanceService {
     }
 
     /**
-     * 按教学班统计考勤节数
-     * @param courseClassId 教学班统计
-     * @return 考勤统计
-     */
-    def statsByCourseClass(UUID courseClassId) {
-        CourseClassAttendanceStats.statsByCourseClass(courseClassId)
-    }
-
-    /**
      * 获取学生指定学期的考勤情况
      * @param termId 学期
      * @param studentId 学生ID
@@ -77,19 +68,6 @@ class AttendanceService {
         [
                 rollcalls: StudentAttendance.findRollcalls(termId, studentId),
                 leaves   : StudentAttendance.findLeaves(termId, studentId),
-        ]
-    }
-
-    /**
-     * 获取学生指定教学班的考勤情况
-     * @param courseClassId 教学班ID
-     * @param studentId 学生ID
-     * @return 考勤情况
-     */
-    def getStudentAttendances(UUID courseClassId, String studentId) {
-        [
-                rollcalls: StudentAttendance.findRollcalls(courseClassId, studentId),
-                leaves   : StudentAttendance.findLeaves(courseClassId, studentId),
         ]
     }
 }

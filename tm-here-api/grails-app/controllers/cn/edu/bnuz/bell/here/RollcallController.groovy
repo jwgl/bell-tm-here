@@ -1,8 +1,9 @@
 package cn.edu.bnuz.bell.here
 
+import cn.edu.bnuz.bell.http.ServiceExceptionHandler
 import cn.edu.bnuz.bell.master.TermService
 
-class RollcallController {
+class RollcallController implements ServiceExceptionHandler {
     TermService termService
     RollcallService rollcallService
 

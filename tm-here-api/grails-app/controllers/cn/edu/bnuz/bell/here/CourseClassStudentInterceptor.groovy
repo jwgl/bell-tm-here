@@ -3,7 +3,7 @@ package cn.edu.bnuz.bell.here
 import cn.edu.bnuz.bell.security.SecurityService
 import org.springframework.http.HttpStatus
 
-class CourseClassAttendanceInterceptor {
+class CourseClassStudentInterceptor {
     SecurityService securityService
 
     boolean before() {

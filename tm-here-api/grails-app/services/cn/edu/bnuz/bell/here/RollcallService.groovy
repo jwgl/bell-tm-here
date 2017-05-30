@@ -37,7 +37,8 @@ select new map (
   student.name as name,
   subject.name as subject,
   adminClass.name as adminClass,
-  taskSchedule.id as taskScheduleId
+  taskSchedule.id as taskScheduleId,
+  taskStudent.examFlag = 1 as disqualified
 )
 from Task task
 join task.schedules taskSchedule
@@ -47,6 +48,7 @@ join student.major major
 join major.subject subject
 join student.adminClass adminClass
 where taskSchedule.id in (:taskScheduleIds)
+order by student.id
 ''', [taskScheduleIds: taskScheduleIds]
 
         def rollcalls = Rollcall.executeQuery '''
@@ -69,7 +71,6 @@ and taskSchedule.id in (:taskScheduleIds)
                 rollcalls  : rollcalls,
                 leaves     : studentLeavePublicService.listByTimeslot(cmd),
                 freeListens: freeListenPublicService.listByTimeslot(cmd),
-                cancelExams: [], // TODO Find cancel examine records
                 attendances: TimeslotAttendanceStats.statsByTimeslot(cmd),
         ]
     }

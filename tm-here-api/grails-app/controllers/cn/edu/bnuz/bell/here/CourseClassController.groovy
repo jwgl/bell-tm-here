@@ -1,11 +1,12 @@
 package cn.edu.bnuz.bell.here
 
+import cn.edu.bnuz.bell.http.ServiceExceptionHandler
 import cn.edu.bnuz.bell.master.TermService
 
 /**
  * 按教师查询排课的教学班情况。
  */
-class CourseClassController {
+class CourseClassController implements ServiceExceptionHandler {
     CourseClassService courseClassService
     TermService termService
 
