@@ -15,8 +15,8 @@ class UrlMappings {
                 "/approvers"(controller: 'freeListenCheck', action: 'approvers', method: 'GET')
             }
             "/courseClasses"(resources: 'courseClass', includes: ['index', 'show']) {
+                "/students"(resources: 'courseClassStudent', includes: ['show', 'patch'])
                 "/code"(controller: 'courseClass', action: 'code', method: 'GET')
-                "/attendances"(resources: 'courseClassAttendance', includes: ['index', 'show'])
             }
             "/settings"(resources: 'teacherSetting', includes: ['update'])
         }

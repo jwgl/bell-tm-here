@@ -1,5 +1,6 @@
 package cn.edu.bnuz.bell.here
 
+import cn.edu.bnuz.bell.here.dto.CourseClassAttendanceStats
 import cn.edu.bnuz.bell.http.ForbiddenException
 import cn.edu.bnuz.bell.http.NotFoundException
 import cn.edu.bnuz.bell.operation.CourseClass
@@ -36,7 +37,12 @@ select distinct new map(
   courseClass.startWeek as startWeek,
   courseClass.endWeek as endWeek,
   course.name as course,
-  department.name as department
+  department.name as department,
+  (
+    select sum(taskSchedule.totalSection * floor((taskSchedule.endWeek - taskSchedule.startWeek + 1) / (case taskSchedule.oddEven when 0 then 1 else 2 end)))
+    from courseClass.tasks task
+    join task.schedules taskSchedule
+  ) as totalSection
 )
 from CourseClass courseClass
 join courseClass.course course
@@ -50,12 +56,17 @@ and courseClass.id = :courseClassId
         }
 
         def courseClass = results[0]
+
+        courseClass.rollcallDisqualRatio = 9
+        courseClass.leaveDisqualRatio = 6
+
         courseClass.students = CourseClass.executeQuery '''
 select distinct new map(
   student.id as id,
   student.name as name,
   subject.name as subject,
-  adminClass.name as adminClass
+  adminClass.name as adminClass,
+  taskStudent.examFlag = 1 as disqualified 
 )
 from CourseClass courseClass
 join courseClass.tasks task
@@ -67,6 +78,8 @@ join student.adminClass adminClass
 where courseClass.id = :courseClassId
 order by student.id
 ''', [courseClassId: courseClassId]
+
+        courseClass.attendances = CourseClassAttendanceStats.statsByCourseClass(courseClassId)
 
         return courseClass
     }

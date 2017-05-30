@@ -1,8 +1,8 @@
 package cn.edu.bnuz.bell.here
 
-import groovy.transform.ToString
+import groovy.transform.CompileStatic
 
-@ToString
+@CompileStatic
 class RollcallCreateCommand {
     Integer week
     UUID taskScheduleId

@@ -1,9 +1,10 @@
 package cn.edu.bnuz.bell.here
 
+import cn.edu.bnuz.bell.http.ServiceExceptionHandler
 import cn.edu.bnuz.bell.master.TermService
 import cn.edu.bnuz.bell.operation.ScheduleService
 
-class TeacherTimeslotController {
+class TeacherTimeslotController implements ServiceExceptionHandler {
     TermService termService
     ScheduleService scheduleService
     TeacherSettingService teacherSettingService

@@ -1,8 +1,9 @@
 package cn.edu.bnuz.bell.here
 
 import cn.edu.bnuz.bell.http.BadRequestException
+import cn.edu.bnuz.bell.http.ServiceExceptionHandler
 
-class TeacherSettingController {
+class TeacherSettingController implements ServiceExceptionHandler {
     TeacherSettingService teacherSettingService
 
     def update(String teacherId, String id) {
