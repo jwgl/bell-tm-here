@@ -46,8 +46,8 @@ class CourseClassStudentService {
      * @param courseClassId 教学班ID
      * @param studentId 学号
      */
-    void disqualify(String teacherId, UUID courseClassId, String studentId) {
-        TaskStudentEto.executeUpdate '''
+    Boolean disqualify(String teacherId, UUID courseClassId, String studentId) {
+        def count = TaskStudentEto.executeUpdate '''
 update TaskStudentEto
 set examFlag = :examFlag
 where studentId = :studentId 
@@ -56,8 +56,14 @@ where studentId = :studentId
     from CourseClass courseClass
     join courseClass.tasks task
     where courseClass.id = :courseClassId
-) and examFlag is null 
+) and examFlag is null
+and testScheduled = false
+and locked = false
 ''', [courseClassId: courseClassId, studentId: studentId, examFlag: EXAM_DISQUAL]
+
+        if (count == 0) {
+            return false
+        }
 
         TaskStudent.executeUpdate '''
 update TaskStudent
@@ -73,6 +79,8 @@ where student.id = :studentId
 
         userLogService.log(teacherId, securityService.ipAddress, CourseClass,
                 'DISQUALIFY', courseClassId.toString(), studentId)
+
+        return true
     }
 
     /**
@@ -81,8 +89,8 @@ where student.id = :studentId
      * @param courseClassId 教学班ID
      * @param studentId 学号
      */
-    void qualify(String teacherId, UUID courseClassId, String studentId) {
-        TaskStudentEto.executeUpdate '''
+    Boolean qualify(String teacherId, UUID courseClassId, String studentId) {
+        def count = TaskStudentEto.executeUpdate '''
 update TaskStudentEto
 set examFlag = null
 where studentId = :studentId 
@@ -92,7 +100,13 @@ where studentId = :studentId
     join courseClass.tasks task
     where courseClass.id = :courseClassId
 ) and examFlag = :examFlag 
+and testScheduled = false
+and locked = false
 ''', [courseClassId: courseClassId, studentId: studentId, examFlag: EXAM_DISQUAL]
+
+        if (count == 0) {
+            return false
+        }
 
         TaskStudent.executeUpdate '''
 update TaskStudent
@@ -108,5 +122,7 @@ where student.id = :studentId
 
         userLogService.log(teacherId, securityService.ipAddress, CourseClass,
                 'QUALIFY', courseClassId.toString(), studentId)
+
+        return true
     }
 }
