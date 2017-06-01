@@ -19,16 +19,6 @@ class TaskStudentEto {
      */
     String examFlag
 
-    /**
-     * 已安排考试
-     */
-    Boolean testScheduled
-
-    /**
-     * 已锁定，成绩已录入
-     */
-    Boolean locked
-
     static mapping = {
         table name: 'et_task_student'
     }
