@@ -11,18 +11,16 @@ class CourseClassStudentController implements ServiceExceptionHandler {
     }
 
     def patch(String teacherId, String courseClassId, String id, String op) {
-        Boolean result
         switch (op) {
             case 'DISQUALIFY':
-                result = courseClassStudentService.disqualify(teacherId, UUID.fromString(courseClassId), id)
+                courseClassStudentService.disqualify(teacherId, UUID.fromString(courseClassId), id)
                 break
             case 'QUALIFY':
-                result = courseClassStudentService.qualify(teacherId, UUID.fromString(courseClassId), id)
+                courseClassStudentService.qualify(teacherId, UUID.fromString(courseClassId), id)
                 break
             default:
                 throw new BadRequestException()
         }
-
-        renderJson([result: result])
+        renderOk()
     }
 }
