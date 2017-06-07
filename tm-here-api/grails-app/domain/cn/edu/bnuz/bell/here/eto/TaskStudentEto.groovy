@@ -19,6 +19,11 @@ class TaskStudentEto {
      */
     String examFlag
 
+    /**
+     * 取消人
+     */
+    String operator
+
     static mapping = {
         table name: 'et_task_student'
     }

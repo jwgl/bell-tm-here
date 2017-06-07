@@ -2,7 +2,6 @@ package cn.edu.bnuz.bell.here
 
 import cn.edu.bnuz.bell.here.dto.AdminClassAttendanceStats
 import cn.edu.bnuz.bell.here.dto.AdminClassStats
-import cn.edu.bnuz.bell.here.dto.CourseClassAttendanceStats
 import cn.edu.bnuz.bell.here.dto.StudentAttendance
 import grails.transaction.Transactional
 

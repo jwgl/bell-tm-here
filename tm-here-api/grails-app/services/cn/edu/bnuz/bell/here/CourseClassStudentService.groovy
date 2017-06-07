@@ -16,6 +16,7 @@ import grails.gorm.transactions.Transactional
 @Transactional
 class CourseClassStudentService {
     private static final String EXAM_DISQUAL = '取消资格'
+    private static final String ERROR_DISQUAL_BY_ADMIN = '教务秘书取消考试资格，无法恢复'
     private static final String ERROR_TEST_SCHEDULED = '教学班已安排考试'
     private static final String ERROR_SCORE_COMMITTED = '学生成绩已提交'
 
@@ -29,15 +30,8 @@ class CourseClassStudentService {
      * @param studentId 学号
      * @return 学生个人考勤详细信息
      */
-    def show(String teacherId, UUID courseClassId, String studentId) {
-        CourseClass courseClass = CourseClass.get(courseClassId)
-        if (!courseClass) {
-            throw new NotFoundException()
-        }
-
-        if (courseClass.teacherId != teacherId) {
-            throw new ForbiddenException()
-        }
+    def show(UUID courseClassId, String studentId) {
+        checkPermission(courseClassId)
 
         [
                 rollcalls: StudentAttendance.findRollcalls(courseClassId, studentId),
@@ -51,16 +45,19 @@ class CourseClassStudentService {
      * @param courseClassId 教学班ID
      * @param studentId 学号
      */
-    void disqualify(String teacherId, UUID courseClassId, String studentId) {
-        List taskCodes = getAndCheckTaskCodes(teacherId, courseClassId, studentId)
+    void disqualify(UUID courseClassId, String studentId) {
+        checkPermission(courseClassId)
+
+        List taskCodes = getAndCheckTaskCodes(courseClassId, studentId)
 
         TaskStudentEto.executeUpdate '''
 update TaskStudentEto
-set examFlag = :examFlag
+set examFlag = :examFlag,
+    operator = :operator
 where studentId = :studentId 
   and taskCode in (:taskCodes)
   and examFlag is null
-''', [taskCodes: taskCodes, studentId: studentId, examFlag: EXAM_DISQUAL]
+''', [taskCodes: taskCodes, studentId: studentId, examFlag: EXAM_DISQUAL, operator: securityService.userId]
 
         TaskStudent.executeUpdate '''
 update TaskStudent
@@ -74,7 +71,7 @@ where student.id = :studentId
   ) and examFlag = 0
 ''', [courseClassId: courseClassId, studentId: studentId]
 
-        userLogService.log(teacherId, securityService.ipAddress, CourseClass,
+        userLogService.log(securityService.userId, securityService.ipAddress, CourseClass,
                 'DISQUALIFY', courseClassId.toString(), studentId)
     }
 
@@ -84,12 +81,15 @@ where student.id = :studentId
      * @param courseClassId 教学班ID
      * @param studentId 学号
      */
-    void qualify(String teacherId, UUID courseClassId, String studentId) {
-        List taskCodes = getAndCheckTaskCodes(teacherId, courseClassId, studentId)
+    void qualify(UUID courseClassId, String studentId) {
+        checkPermission(courseClassId)
+
+        List taskCodes = getAndCheckTaskCodes(courseClassId, studentId)
 
         TaskStudentEto.executeUpdate '''
 update TaskStudentEto
-set examFlag = null
+set examFlag = null,
+    operator = null
 where studentId = :studentId 
   and taskCode in (:taskCodes)
   and examFlag = :examFlag
@@ -107,8 +107,29 @@ where student.id = :studentId
   ) and examFlag = 1
 ''', [courseClassId: courseClassId, studentId: studentId]
 
-        userLogService.log(teacherId, securityService.ipAddress, CourseClass,
+        userLogService.log(securityService.userId, securityService.ipAddress, CourseClass,
                 'QUALIFY', courseClassId.toString(), studentId)
+    }
+
+    /**
+     * 检查用户操作权限
+     * @param courseClassId 教学班
+     */
+    private void checkPermission(UUID courseClassId) {
+        CourseClass courseClass = CourseClass.get(courseClassId)
+        if (!courseClass) {
+            throw new NotFoundException()
+        }
+
+        if (isAdmin()) {
+            if (courseClass.departmentId != securityService.departmentId) {
+                throw new ForbiddenException()
+            }
+        } else {
+            if (courseClass.teacherId != securityService.userId) {
+                throw new ForbiddenException()
+            }
+        }
     }
 
     /**
@@ -118,14 +139,13 @@ where student.id = :studentId
      * @param studentId 学号
      * @return 课号列表
      */
-    private List<String> getAndCheckTaskCodes(String teacherId, UUID courseClassId, String studentId) {
+    private List<String> getAndCheckTaskCodes(UUID courseClassId, String studentId) {
         List taskCodes = Task.executeQuery '''
 select distinct task.code
 from CourseClass courseClass
 join courseClass.tasks task
 where courseClass.id = :courseClassId
-and courseClass.teacher.id = :teacherId
-''', [teacherId: teacherId, courseClassId: courseClassId]
+''', [courseClassId: courseClassId]
 
         if (taskCodes.size() == 0) {
             throw new NotFoundException()
@@ -133,8 +153,16 @@ and courseClass.teacher.id = :teacherId
 
         List<TaskStudentDto> taskStudentDtos = TaskStudentDto.findAllByStudentIdAndTaskCodeInList(studentId, taskCodes)
 
-        if (taskStudentDtos.any {it.testScheduled}) {
-            throw new BadRequestException(ERROR_TEST_SCHEDULED)
+        if (!isAdmin()) {
+            if (taskStudentDtos.any {it.examFlag == EXAM_DISQUAL}) {
+                if (taskStudentDtos.any { it.operator != securityService.userId}) {
+                    throw new BadRequestException(ERROR_DISQUAL_BY_ADMIN)
+                }
+
+                if (taskStudentDtos.any { it.testScheduled }) {
+                    throw new BadRequestException(ERROR_TEST_SCHEDULED)
+                }
+            }
         }
 
         if (taskStudentDtos.any {it.scoreCommitted}) {
@@ -142,5 +170,12 @@ and courseClass.teacher.id = :teacherId
         }
 
         return taskCodes
+    }
+
+    /**
+     * 是否为管理员
+     */
+    private Boolean isAdmin() {
+        securityService.hasPermission('PERM_EXAM_DISQUAL_DEPT_ADMIN')
     }
 }

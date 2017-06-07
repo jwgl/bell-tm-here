@@ -3,7 +3,7 @@ package cn.edu.bnuz.bell.here.dto
 import grails.gorm.hibernate.HibernateEntity
 
 /**
- * 行政班考勤人数
+ * 行政班列表，含考勤人数
  */
 class AdminClassStats implements HibernateEntity<AdminClassStats> {
     /**

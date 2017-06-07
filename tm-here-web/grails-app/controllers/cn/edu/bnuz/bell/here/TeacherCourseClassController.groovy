@@ -5,18 +5,18 @@ import cn.edu.bnuz.bell.report.ReportRequest
 import cn.edu.bnuz.bell.report.ReportResponse
 import org.springframework.http.HttpStatus
 
-class CourseClassController {
+class TeacherCourseClassController {
     ReportClientService reportClientService
 
     def index() { }
 
-    def report(String teacherId, String courseClassId) {
+    def report(String teacherId, String teacherCourseClassId) {
         def courseClassCode = reportClientService.restTemplate.getForObject(
                 'http://tm-here-api/teachers/{teacherId}/courseClasses/{courseClassId}/code',
                 String,
                 [
                         teacherId    : teacherId,
-                        courseClassId: courseClassId,
+                        courseClassId: teacherCourseClassId,
                 ]
         )
 
@@ -25,7 +25,7 @@ class CourseClassController {
                 reportName: 'attendance-statis-by-course-class',
                 format: 'xlsx',
                 parameters: [
-                        courseClassId  : courseClassId,
+                        courseClassId  : teacherCourseClassId,
                         courseClassCode: courseClassCode,
                         idKey          : 'courseClassCode'
                 ]

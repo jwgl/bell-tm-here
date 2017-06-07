@@ -22,6 +22,11 @@ class TaskStudentDto implements Serializable {
     String examFlag
 
     /**
+     * 取消人
+     */
+    String operator
+
+    /**
      * 已安排考试
      */
     Boolean testScheduled
