@@ -6,8 +6,8 @@ class UrlMappings {
         "/teachers"(resources: 'teacher', includes: []) {
             "/rollcalls"(resources: 'rollcallForm', includes: ['index'])
             "/freeListens"(resources: 'freeListenCheck', includes: ['index'])
-            "/courseClasses"(resources: 'courseClass', includes: ['index']) {
-                "/report"(controller: 'courseClass', action: 'report', method: 'GET')
+            "/courseClasses"(resources: 'teacherCourseClass', includes: ['index']) {
+                "/report"(controller: 'teacherCourseClass', action: 'report', method: 'GET')
             }
         }
 
@@ -26,7 +26,12 @@ class UrlMappings {
             collection {
                 "/statisReport"(controller: 'attendanceReport', action: 'statis', method: 'GET')
                 "/detailReport"(controller: 'attendanceReport', action: 'detail', method: 'GET')
+                "/disqualReport"(controller: 'attendanceReport', action: 'disqual', method: 'GET')
             }
+        }
+
+        "/departments"(resources: 'department', includes:[]) {
+            "/disquals"(resources: 'departmentCourseClass', includes: ['index'])
         }
 
         "/leaves"(resources: 'studentLeavePublic', includes: ['show'])

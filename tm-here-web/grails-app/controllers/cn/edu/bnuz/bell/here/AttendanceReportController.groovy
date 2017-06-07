@@ -53,6 +53,19 @@ class AttendanceReportController {
         }
     }
 
+    def disqual() {
+        if (securityService.hasRole('ROLE_ROLLCALL_DEPT_ADMIN')) {
+            report(new ReportRequest(
+                    reportService: 'tm-report',
+                    reportName: 'exam-disqual-by-student-department',
+                    format: 'xlsx',
+                    parameters: [termId: params.termId, departmentId: securityService.departmentId]
+            ))
+        } else {
+            throw new ForbiddenException()
+        }
+    }
+
     private report(ReportRequest reportRequest) {
         ReportResponse reportResponse = reportClientService.runAndRender(reportRequest)
 

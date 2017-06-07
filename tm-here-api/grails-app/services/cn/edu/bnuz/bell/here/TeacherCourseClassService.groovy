@@ -7,8 +7,8 @@ import cn.edu.bnuz.bell.operation.CourseClass
 import grails.gorm.transactions.Transactional
 
 @Transactional(readOnly = true)
-class CourseClassService {
-    def list(String teacherId, Integer termId) {
+class TeacherCourseClassService {
+    def getTeacherCourseClasses(Integer termId, String teacherId, String departmentId) {
         CourseClass.executeQuery '''
 select distinct new map(
   courseClass.id as id,
@@ -20,15 +20,16 @@ from CourseClass courseClass
 join courseClass.course course
 join courseClass.tasks task
 join task.students taskStudent
-where exists elements(task.schedules) 
-and courseClass.teacher.id = :teacherId
-and courseClass.term.id = :termId
+where exists elements(task.schedules)
+ and courseClass.term.id = :termId
+ and courseClass.teacher.id = :teacherId
+ and courseClass.department.id like :departmentId
 group by courseClass.id, courseClass.name, course.name
 order by course.name, courseClass.name
-''', [teacherId: teacherId, termId: termId]
+''', [termId: termId, teacherId: teacherId, departmentId: departmentId]
     }
 
-    def getCourseClassInfo(String teacherId, UUID courseClassId) {
+    def getCourseClassInfo(String teacherId, UUID courseClassId, String departmentId) {
         def results = CourseClass.executeQuery '''
 select distinct new map(
   courseClass.id as id,
@@ -47,9 +48,10 @@ select distinct new map(
 from CourseClass courseClass
 join courseClass.course course
 join courseClass.department department
-where courseClass.teacher.id = :teacherId 
-and courseClass.id = :courseClassId
-''', [teacherId: teacherId, courseClassId: courseClassId]
+where courseClass.teacher.id = :teacherId
+  and courseClass.id = :courseClassId
+  and courseClass.department.id like :departmentId
+''', [teacherId: teacherId, courseClassId: courseClassId, departmentId: departmentId]
 
         if (!results) {
             throw new NotFoundException()

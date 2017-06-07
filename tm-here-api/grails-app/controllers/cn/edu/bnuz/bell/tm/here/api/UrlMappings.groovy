@@ -14,9 +14,8 @@ class UrlMappings {
                 "/workitems"(resources: 'freeListenCheck', includes: ['show', 'patch'])
                 "/approvers"(controller: 'freeListenCheck', action: 'approvers', method: 'GET')
             }
-            "/courseClasses"(resources: 'courseClass', includes: ['index', 'show']) {
-                "/students"(resources: 'courseClassStudent', includes: ['show', 'patch'])
-                "/code"(controller: 'courseClass', action: 'code', method: 'GET')
+            "/courseClasses"(resources: 'teacherCourseClass', includes: ['index', 'show']) {
+                "/code"(controller: 'teacherCourseClass', action: 'code', method: 'GET')
             }
             "/settings"(resources: 'teacherSetting', includes: ['update'])
         }
@@ -48,6 +47,16 @@ class UrlMappings {
             collection {
                 "/adminClasses"(controller: 'attendance', action: 'adminClasses', method: 'GET')
             }
+        }
+
+        "/courseClasses"(resources: 'courseClass', includes:[]) {
+            "/students"(resources: 'courseClassStudent', includes: ['patch']) {
+                "/attendances"(controller: 'courseClassStudent', action: 'attendances', method: 'GET')
+            }
+        }
+
+        "/departments"(resources: 'department', includes: []) {
+            "/courseClassTeachers"(controller: 'departmentCourseClass', action: 'courseClassTeachers', method: 'GET')
         }
 
         "/leaves"(resources: 'studentLeavePublic', includes: ['show'])
