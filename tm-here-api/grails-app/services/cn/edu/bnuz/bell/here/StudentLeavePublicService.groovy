@@ -127,6 +127,7 @@ where form.status in ('APPROVED', 'FINISHED')
   )
   and taskSchedule.dayOfWeek = :dayOfWeek
   and taskSchedule.startSection = :startSection
+  and taskSchedule.totalSection = :totalSection
   and taskSchedule.teacher.id = :teacherId
 ''', cmd as Map
     }

@@ -29,6 +29,7 @@ where courseClass.term.id = :termId
    or taskSchedule.oddEven = 2 and :week % 2 = 0)
   and taskSchedule.dayOfWeek = :dayOfWeek
   and taskSchedule.startSection = :startSection
+  and taskSchedule.totalSection = :totalSection
 ''', cmd as Map
 
         def students = TaskStudent.executeQuery '''

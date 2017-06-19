@@ -42,7 +42,7 @@ class TimeslotAttendanceStats implements HibernateEntity<TimeslotAttendanceStats
      * @param cmd 时段
      */
     static statsByTimeslot(TeacherTimeslotCommand cmd) {
-        findAllWithSql("select * from sp_get_student_attendance_stats_by_timeslot($cmd.termId, $cmd.teacherId, $cmd.week, $cmd.dayOfWeek, $cmd.startSection)")
+        findAllWithSql("select * from sp_get_student_attendance_stats_by_timeslot($cmd.termId, $cmd.teacherId, $cmd.week, $cmd.dayOfWeek, $cmd.startSection, $cmd.totalSection)")
     }
 
     /**
