@@ -97,7 +97,8 @@ join task.schedules taskSchedule
 join task.students taskStudent
 where form.status = 'APPROVED'
   and form.term.id = :termId
-  and item.taskSchedule = taskSchedule
+  and (item.taskSchedule = taskSchedule
+   or item.taskSchedule = taskSchedule.root.id)
   and form.student = taskStudent.student
   and form.term = courseClass.term
   and :week between taskSchedule.startWeek and taskSchedule.endWeek
