@@ -15,7 +15,7 @@ import cn.edu.bnuz.bell.workflow.WorkflowInstance
 import cn.edu.bnuz.bell.workflow.Workitem
 import cn.edu.bnuz.bell.workflow.commands.AcceptCommand
 import cn.edu.bnuz.bell.workflow.commands.RejectCommand
-import grails.transaction.Transactional
+import grails.gorm.transactions.Transactional
 
 import javax.annotation.Resource
 
@@ -157,7 +157,7 @@ order by form.dateApproved desc
         )
         domainStateMachineHandler.checkReviewer(id, userId, Activities.APPROVE)
 
-        def schedules = scheduleService.getStudentSchedules(form.studentId, form.term)
+        def schedules = scheduleService.getStudentSchedules(form.term, form.studentId)
         return [
                 form: form,
                 schedules: schedules,
@@ -174,7 +174,7 @@ order by form.dateApproved desc
         def activity = Workitem.get(workitemId).activitySuffix
         domainStateMachineHandler.checkReviewer(id, userId, activity)
 
-        def schedules = scheduleService.getStudentSchedules(form.studentId, form.term)
+        def schedules = scheduleService.getStudentSchedules(form.term, form.studentId)
         return [
                 form: form,
                 schedules: schedules,

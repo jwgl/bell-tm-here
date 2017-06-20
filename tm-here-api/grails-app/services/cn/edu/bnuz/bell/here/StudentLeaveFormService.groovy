@@ -14,7 +14,7 @@ import cn.edu.bnuz.bell.workflow.WorkflowActivity
 import cn.edu.bnuz.bell.workflow.WorkflowInstance
 import cn.edu.bnuz.bell.workflow.Workitem
 import cn.edu.bnuz.bell.workflow.commands.SubmitCommand
-import grails.transaction.Transactional
+import grails.gorm.transactions.Transactional
 
 import javax.annotation.Resource
 
@@ -101,7 +101,7 @@ where item.form.id = :formId
 
         form.editable = domainStateMachineHandler.canUpdate(form)
 
-        def schedules = scheduleService.getStudentSchedules(studentId, form.term)
+        def schedules = scheduleService.getStudentSchedules(form.term, studentId)
 
         return [
                 schedules: schedules,
@@ -111,7 +111,7 @@ where item.form.id = :formId
 
     def getFormForCreate(String studentId) {
         def term = termService.activeTerm
-        def schedules = scheduleService.getStudentSchedules(studentId, term.id)
+        def schedules = scheduleService.getStudentSchedules(term.id, studentId)
 
         return [
                 term: [
@@ -124,7 +124,7 @@ where item.form.id = :formId
                 ],
                 schedules: schedules,
                 freeListens: [],
-                existedItems: findExistedLeaveItems(studentId, term, 0),
+                existedItems: findExistedLeaveItems(term, studentId, 0),
         ]
     }
 
@@ -139,7 +139,7 @@ where item.form.id = :formId
             throw new BadRequestException()
         }
 
-        def schedules = scheduleService.getStudentSchedules(studentId, form.term)
+        def schedules = scheduleService.getStudentSchedules(form.term, studentId)
         def term = Term.get(form.term)
 
         return [
@@ -151,7 +151,7 @@ where item.form.id = :formId
                 form: form,
                 schedules: schedules,
                 freeListens: [],
-                existedItems: findExistedLeaveItems(studentId, term, id),
+                existedItems: findExistedLeaveItems(term, studentId, id),
         ]
     }
 
@@ -162,7 +162,7 @@ where item.form.id = :formId
      * @param excludeFormId 不包含的此请假条ID，用于编辑表单；新建请假条时，可省略此参数
      * @return 请假项列表
      */
-    List findExistedLeaveItems(String studentId, Term term, Long excludeFormId) {
+    List findExistedLeaveItems(Term term, String studentId, Long excludeFormId) {
         StudentLeaveItem.executeQuery '''
 select new map (
   item.id as id,

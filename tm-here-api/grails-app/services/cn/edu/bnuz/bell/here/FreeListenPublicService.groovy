@@ -2,16 +2,14 @@ package cn.edu.bnuz.bell.here
 
 import cn.edu.bnuz.bell.http.ForbiddenException
 import cn.edu.bnuz.bell.http.NotFoundException
-import cn.edu.bnuz.bell.operation.ScheduleService
 import cn.edu.bnuz.bell.organization.StudentService
 import cn.edu.bnuz.bell.security.SecurityService
 import cn.edu.bnuz.bell.service.DataAccessService
-import grails.transaction.Transactional
+import grails.gorm.transactions.Transactional
 
-@Transactional
+@Transactional(readOnly = true)
 class FreeListenPublicService {
     FreeListenFormService freeListenFormService
-    ScheduleService scheduleService
     DataAccessService dataAccessService
     SecurityService securityService
     StudentService studentService
@@ -27,7 +25,7 @@ class FreeListenPublicService {
             throw new ForbiddenException()
         }
 
-        def studentSchedules = scheduleService.getStudentSchedules(form.studentId, form.term)
+        def studentSchedules = freeListenFormService.getStudentSchedules(form.term, form.studentId)
         def departmentSchedules = freeListenFormService.findDepartmentOtherSchedules(form.id)
         return [
                 form: form,

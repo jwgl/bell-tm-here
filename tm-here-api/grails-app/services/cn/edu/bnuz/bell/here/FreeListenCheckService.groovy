@@ -1,7 +1,6 @@
 package cn.edu.bnuz.bell.here
 
 import cn.edu.bnuz.bell.http.BadRequestException
-import cn.edu.bnuz.bell.operation.ScheduleService
 import cn.edu.bnuz.bell.organization.Teacher
 import cn.edu.bnuz.bell.security.User
 import cn.edu.bnuz.bell.service.DataAccessService
@@ -15,14 +14,13 @@ import cn.edu.bnuz.bell.workflow.WorkflowInstance
 import cn.edu.bnuz.bell.workflow.Workitem
 import cn.edu.bnuz.bell.workflow.commands.AcceptCommand
 import cn.edu.bnuz.bell.workflow.commands.RejectCommand
-import grails.transaction.Transactional
+import grails.gorm.transactions.Transactional
 
 import javax.annotation.Resource
 
 @Transactional
 class FreeListenCheckService {
     FreeListenFormService freeListenFormService
-    ScheduleService scheduleService
     DataAccessService dataAccessService
 
     @Resource(name='freeListenFormStateHandler')
@@ -109,7 +107,7 @@ order by form.dateChecked desc
         )
         domainStateMachineHandler.checkReviewer(id, teacherId, activity)
 
-        def studentSchedules = scheduleService.getStudentSchedules(form.studentId, form.term)
+        def studentSchedules = freeListenFormService.getStudentSchedules(form.term, form.studentId)
         def departmentSchedules = freeListenFormService.findDepartmentOtherSchedules(form.id)
         return [
                 form: form,
@@ -128,7 +126,7 @@ order by form.dateChecked desc
         def activity = Workitem.get(workitemId).activitySuffix
         domainStateMachineHandler.checkReviewer(id, teacherId, activity)
 
-        def studentSchedules = scheduleService.getStudentSchedules(form.studentId, form.term)
+        def studentSchedules = freeListenFormService.getStudentSchedules(form.term, form.studentId)
         def departmentSchedules = freeListenFormService.findDepartmentOtherSchedules(form.id)
         return [
                 form: form,

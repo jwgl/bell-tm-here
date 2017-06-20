@@ -4,14 +4,13 @@ import cn.edu.bnuz.bell.http.BadRequestException
 import cn.edu.bnuz.bell.http.ForbiddenException
 import cn.edu.bnuz.bell.http.NotFoundException
 import cn.edu.bnuz.bell.master.TermService
-import cn.edu.bnuz.bell.operation.ScheduleService
 import cn.edu.bnuz.bell.operation.TaskSchedule
 import cn.edu.bnuz.bell.organization.Student
 import cn.edu.bnuz.bell.organization.Teacher
 import cn.edu.bnuz.bell.system.SystemConfigService
 import cn.edu.bnuz.bell.workflow.DomainStateMachineHandler
 import cn.edu.bnuz.bell.workflow.commands.SubmitCommand
-import grails.transaction.Transactional
+import grails.gorm.transactions.Transactional
 
 import javax.annotation.Resource
 import java.time.LocalDate
@@ -19,7 +18,6 @@ import java.time.LocalDate
 @Transactional
 class FreeListenFormService {
     TermService termService
-    ScheduleService scheduleService
     SystemConfigService systemConfigService
 
     @Resource(name='freeListenFormStateHandler')
@@ -101,12 +99,12 @@ from FreeListenItem item
 where item.form.id = :formId
 ''', [formId: id]
 
-        form.existedItems = findExistedFreeListenItems(form.studentId, form.term, form.id)
+        form.existedItems = findExistedFreeListenItems(form.term, form.studentId, form.id)
 
         return form
     }
 
-    List findExistedFreeListenItems(String studentId, Integer termId, Long excludeFormId) {
+    List findExistedFreeListenItems(Integer termId, String studentId, Long excludeFormId) {
         FreeListenForm.executeQuery '''
 select new map(
   item.taskSchedule.id as taskScheduleId,
@@ -138,7 +136,7 @@ where form.student.id = :studentId
             form.editable = false
         }
 
-        def studentSchedules = scheduleService.getStudentSchedules(studentId, form.term)
+        def studentSchedules = getStudentSchedules(form.term, studentId)
         def departmentSchedules = findDepartmentOtherSchedules(form.id)
         return [
                 form: form,
@@ -158,12 +156,49 @@ where form.student.id = :studentId
             throw new BadRequestException()
         }
 
-        def schedules = scheduleService.getStudentSchedules(studentId, form.term)
+        def schedules = getStudentSchedules(form.term, studentId)
 
         return [
                 form: form,
                 schedules: schedules,
         ]
+    }
+
+    List getStudentSchedules(Integer termId, String studentId) {
+        TaskSchedule.executeQuery '''
+select new map(
+  schedule.id as id,
+  task.id as taskId,
+  courseClass.id as courseClassId,
+  courseClass.name as courseClassName,
+  courseTeacher.id as courseTeacherId,
+  courseTeacher.name as courseTeacherName,
+  scheduleTeacher.id as teacherId,
+  scheduleTeacher.name as teacherName,
+  schedule.startWeek as startWeek,
+  schedule.endWeek as endWeek,
+  schedule.oddEven as oddEven,
+  schedule.dayOfWeek as dayOfWeek,
+  schedule.startSection as startSection,
+  schedule.totalSection as totalSection,
+  course.name as course,
+  courseItem.name as courseItem,
+  place.name as place,
+  taskStudent.repeatType as repeatType,
+  schedule.root.id as rootId
+)
+from CourseClass courseClass
+join courseClass.course course
+join courseClass.tasks task
+join task.schedules schedule
+join task.students taskStudent
+join courseClass.teacher courseTeacher
+join schedule.teacher scheduleTeacher
+left join task.courseItem courseItem
+left join schedule.place place
+where taskStudent.student.id = :studentId
+  and courseClass.term.id = :termId
+''', [termId: termId, studentId: studentId]
     }
 
      /**
@@ -256,7 +291,7 @@ where (courseClass.term.id,
         checkOpeningDate()
 
         def term = termService.activeTerm
-        def schedules = scheduleService.getStudentSchedules(studentId, term.id)
+        def schedules = getStudentSchedules(term.id, studentId)
         def student = Student.get(studentId)
         return [
                 term: [
@@ -270,7 +305,7 @@ where (courseClass.term.id,
                         studentName: student.name,
                         atSchool: student.atSchool,
                         items: [],
-                        existedItems: findExistedFreeListenItems(studentId, term.id, 0),
+                        existedItems: findExistedFreeListenItems(term.id, studentId, 0),
                 ],
                 schedules: schedules,
         ]

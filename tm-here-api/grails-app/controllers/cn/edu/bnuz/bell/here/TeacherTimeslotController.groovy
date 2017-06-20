@@ -11,7 +11,7 @@ class TeacherTimeslotController implements ServiceExceptionHandler {
 
     def index(String teacherId) {
         def term = termService.activeTerm
-        def schedules = scheduleService.getTeacherSchedules(teacherId, term.id)
+        def schedules = scheduleService.getTeacherSchedules(term.id, teacherId)
 
         renderJson([
                 term: [
