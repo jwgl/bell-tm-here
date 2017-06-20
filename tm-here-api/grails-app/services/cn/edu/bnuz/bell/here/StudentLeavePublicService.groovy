@@ -6,9 +6,9 @@ import cn.edu.bnuz.bell.operation.ScheduleService
 import cn.edu.bnuz.bell.organization.StudentService
 import cn.edu.bnuz.bell.security.SecurityService
 import cn.edu.bnuz.bell.service.DataAccessService
-import grails.transaction.Transactional
+import grails.gorm.transactions.Transactional
 
-@Transactional
+@Transactional(readOnly = true)
 class StudentLeavePublicService {
     StudentLeaveFormService studentLeaveFormService
     ScheduleService scheduleService
@@ -27,7 +27,7 @@ class StudentLeavePublicService {
             throw new ForbiddenException()
         }
 
-        def schedules = scheduleService.getStudentSchedules(form.studentId, form.term)
+        def schedules = scheduleService.getStudentSchedules(form.term, form.studentId)
 
         return [
                 schedules: schedules,

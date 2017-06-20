@@ -1,9 +1,9 @@
 package cn.edu.bnuz.bell.here
 
 import cn.edu.bnuz.bell.operation.CourseClass
-import grails.transaction.Transactional
+import grails.gorm.transactions.Transactional
 
-@Transactional
+@Transactional(readOnly = true)
 class DepartmentCourseClassService {
 
     /**

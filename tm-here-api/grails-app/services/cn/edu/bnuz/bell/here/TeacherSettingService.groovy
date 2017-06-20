@@ -3,7 +3,7 @@ package cn.edu.bnuz.bell.here
 import cn.edu.bnuz.bell.profile.UserSettingService
 import grails.gorm.transactions.Transactional
 
-@Transactional
+@Transactional(readOnly = true)
 class TeacherSettingService {
     static final String ROLLCALL_SETTINGS_KEY = 'rollcall.settings'
     static final String ROLLCALL_VIEW_KEY = 'rollcall.view'
