@@ -2,6 +2,7 @@ package cn.edu.bnuz.bell.here
 
 import cn.edu.bnuz.bell.http.BadRequestException
 import cn.edu.bnuz.bell.http.ServiceExceptionHandler
+import cn.edu.bnuz.bell.master.TermService
 import cn.edu.bnuz.bell.workflow.Activities
 import cn.edu.bnuz.bell.workflow.Event
 import cn.edu.bnuz.bell.workflow.ListCommand
@@ -14,6 +15,7 @@ import org.springframework.security.access.prepost.PreAuthorize
 class FreeListenCheckController implements ServiceExceptionHandler {
     FreeListenCheckService freeListenCheckService
     FreeListenReviewerService freeListenReviewerService
+    TermService termService
 
     def index(String teacherId, ListCommand cmd) {
         renderJson freeListenCheckService.list(teacherId, cmd)
@@ -52,5 +54,9 @@ class FreeListenCheckController implements ServiceExceptionHandler {
 
     def approvers(String teacherId, Long freeListenCheckId) {
         renderJson freeListenReviewerService.getApprovers()
+    }
+
+    def settings(String teacherId) {
+        renderJson freeListenCheckService.getSettings(termService.activeTerm.id)
     }
 }

@@ -37,12 +37,12 @@ class FreeListenApprovalService extends FreeListenCheckService {
         def forms = FreeListenForm.executeQuery '''
 select new map(
   form.id as id,
+  form.term.id as term,
   student.id as studentId,
   student.name as studentName,
   subject.name as subject,
   major.grade as grade,
-  form.dateSubmitted as date,
-  form.reason as reason,
+  form.dateChecked as date,
   form.status as status
 )
 from FreeListenForm form
@@ -60,12 +60,12 @@ order by form.dateChecked
         def forms = FreeListenForm.executeQuery '''
 select new map(
   form.id as id,
+  form.term.id as term,
   student.id as studentId,
   student.name as studentName,
   subject.name as subject,
   major.grade as grade,
-  form.dateSubmitted as date,
-  form.reason as reason,
+  form.dateApproved as date,
   form.status as status
 )
 from FreeListenForm form
@@ -83,12 +83,12 @@ order by form.dateApproved desc
         def forms = FreeListenForm.executeQuery '''
 select new map(
   form.id as id,
+  form.term.id as term,
   student.id as studentId,
   student.name as studentName,
   subject.name as subject,
   major.grade as grade,
   form.dateSubmitted as date,
-  form.reason as reason,
   form.status as status
 )
 from FreeListenForm form
