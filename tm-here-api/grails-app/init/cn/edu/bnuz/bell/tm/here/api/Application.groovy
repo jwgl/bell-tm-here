@@ -1,8 +1,10 @@
 package cn.edu.bnuz.bell.tm.here.api
 
 import cn.edu.bnuz.bell.config.ExternalConfigLoader
+import cn.edu.bnuz.bell.here.FreeListenSettings
 import grails.boot.GrailsApp
 import grails.boot.config.GrailsAutoConfiguration
+import grails.converters.JSON
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.cloud.netflix.eureka.EnableEurekaClient
 import org.springframework.context.EnvironmentAware
@@ -22,5 +24,21 @@ class Application extends GrailsAutoConfiguration implements EnvironmentAware {
     @Override
     void setEnvironment(Environment environment) {
         ExternalConfigLoader.load(environment)
+    }
+
+    @Override
+    Closure doWithSpring() {
+        { ->
+            JSON.registerObjectMarshaller(FreeListenSettings) { FreeListenSettings it ->
+                [
+                        term          : it.term.id,
+                        applyStartDate: it.applyStartDate,
+                        applyEndDate  : it.applyEndDate,
+                        checkStartDate: it.checkStartDate,
+                        checkEndDate  : it.checkEndDate,
+                        today         : it.today,
+                ]
+            }
+        }
     }
 }

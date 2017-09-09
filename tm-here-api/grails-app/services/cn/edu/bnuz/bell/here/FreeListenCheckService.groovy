@@ -28,11 +28,13 @@ class FreeListenCheckService {
 
     def getCounts(String teacherId) {
         def teacher = Teacher.load(teacherId)
-        def todo = FreeListenForm.countByCheckerAndStatus(teacher, State.SUBMITTED)
+        def todo = countTodoList(teacherId)
+        def expr = countExprList(teacherId)
         def done = FreeListenForm.countByCheckerAndStatusNotEqualAndDateCheckedIsNotNull(teacher, State.SUBMITTED)
 
         [
                 (ListType.TODO): todo,
+                (ListType.EXPR): expr,
                 (ListType.DONE): done,
         ]
     }
@@ -41,6 +43,8 @@ class FreeListenCheckService {
         switch (cmd.type) {
             case ListType.TODO:
                 return findTodoList(userId, cmd.args)
+            case ListType.EXPR:
+                return findExprList(userId, cmd.args)
             case ListType.DONE:
                 return findDoneList(userId, cmd.args)
             default:
@@ -48,23 +52,75 @@ class FreeListenCheckService {
         }
     }
 
+    def countTodoList(String teacherId) {
+        dataAccessService.getLong '''
+select count(*)
+from FreeListenForm form, FreeListenSettings settings
+where form.term = settings.term
+and current_date between settings.checkStartDate and settings.checkEndDate
+and form.status = :status
+and form.checker.id = :teacherId
+''', [teacherId: teacherId, status: State.SUBMITTED]
+    }
+
+    def countExprList(String teacherId) {
+        dataAccessService.getLong '''
+select count(*)
+from FreeListenForm form, FreeListenSettings settings
+where form.term = settings.term
+and current_date not between settings.checkStartDate and settings.checkEndDate
+and form.status = :status
+and form.checker.id = :teacherId
+''', [teacherId: teacherId, status: State.SUBMITTED]
+    }
+
     def findTodoList(String teacherId, Map args) {
         def forms = FreeListenForm.executeQuery '''
 select new map(
   form.id as id,
+  form.term.id as term,
   student.id as studentId,
   student.name as studentName,
   subject.name as subject,
   major.grade as grade,
   form.dateSubmitted as date,
-  form.reason as reason,
   form.status as status
 )
 from FreeListenForm form
 join form.student student
 join student.major major
-join major.subject subject
-where form.checker.id = :teacherId
+join major.subject subject,
+FreeListenSettings settings
+where form.term = settings.term
+and current_date between settings.checkStartDate and settings.checkEndDate
+and form.checker.id = :teacherId
+and form.status = :status
+order by form.dateSubmitted
+''',[teacherId: teacherId, status: State.SUBMITTED], args
+
+        return [forms: forms, counts: getCounts(teacherId)]
+    }
+
+    def findExprList(String teacherId, Map args) {
+        def forms = FreeListenForm.executeQuery '''
+select new map(
+  form.id as id,
+  form.term.id as term,
+  student.id as studentId,
+  student.name as studentName,
+  subject.name as subject,
+  major.grade as grade,
+  form.dateSubmitted as date,
+  form.status as status
+)
+from FreeListenForm form
+join form.student student
+join student.major major
+join major.subject subject,
+FreeListenSettings settings
+where form.term = settings.term
+and current_date not between settings.checkStartDate and settings.checkEndDate
+and form.checker.id = :teacherId
 and form.status = :status
 order by form.dateSubmitted
 ''',[teacherId: teacherId, status: State.SUBMITTED], args
@@ -76,12 +132,12 @@ order by form.dateSubmitted
         def forms = FreeListenForm.executeQuery '''
 select new map(
   form.id as id,
+  form.term.id as term,
   student.id as studentId,
   student.name as studentName,
   subject.name as subject,
   major.grade as grade,
   form.dateChecked as date,
-  form.reason as reason,
   form.status as status
 )
 from FreeListenForm form
@@ -107,16 +163,18 @@ order by form.dateChecked desc
         )
         domainStateMachineHandler.checkReviewer(id, teacherId, activity)
 
-        def studentSchedules = freeListenFormService.getStudentSchedules(form.term, form.studentId)
+        def termId = form.term as Integer
+        def studentSchedules = freeListenFormService.getStudentSchedules(termId, form.studentId)
         def departmentSchedules = freeListenFormService.findDepartmentOtherSchedules(form.id)
         return [
-                form: form,
-                studentSchedules: studentSchedules,
+                form               : form,
+                studentSchedules   : studentSchedules,
                 departmentSchedules: departmentSchedules,
-                counts: getCounts(teacherId),
-                workitemId: workitem ? workitem.id : null,
-                prevId: getPrevReviewId(teacherId, id, type),
-                nextId: getNextReviewId(teacherId, id, type),
+                settings           : getSettings(termId),
+                counts             : getCounts(teacherId),
+                workitemId         : workitem ? workitem.id : null,
+                prevId             : getPrevReviewId(teacherId, id, type),
+                nextId             : getNextReviewId(teacherId, id, type),
         ]
     }
 
@@ -126,27 +184,41 @@ order by form.dateChecked desc
         def activity = Workitem.get(workitemId).activitySuffix
         domainStateMachineHandler.checkReviewer(id, teacherId, activity)
 
-        def studentSchedules = freeListenFormService.getStudentSchedules(form.term, form.studentId)
+        def termId = form.term as Integer
+        def studentSchedules = freeListenFormService.getStudentSchedules(termId, form.studentId)
         def departmentSchedules = freeListenFormService.findDepartmentOtherSchedules(form.id)
         return [
-                form: form,
-                studentSchedules: studentSchedules,
+                form               : form,
+                studentSchedules   : studentSchedules,
                 departmentSchedules: departmentSchedules,
-                counts: getCounts(teacherId),
-                workitemId: workitemId,
-                prevId: getPrevReviewId(teacherId, id, type),
-                nextId: getNextReviewId(teacherId, id, type),
+                settings           : getSettings(termId),
+                counts             : getCounts(teacherId),
+                workitemId         : workitemId,
+                prevId             : getPrevReviewId(teacherId, id, type),
+                nextId             : getNextReviewId(teacherId, id, type),
         ]
     }
-
 
     Long getPrevReviewId(String teacherId, Long id, ListType type) {
         switch (type) {
             case ListType.TODO:
                 return dataAccessService.getLong('''
 select form.id
-from FreeListenForm form
-where form.checker.id = :teacherId
+from FreeListenForm form, FreeListenSettings settings
+where form.term = settings.term
+and current_date between settings.checkStartDate and settings.checkEndDate
+and form.checker.id = :teacherId
+and form.status = :status
+and form.dateSubmitted < (select dateSubmitted from FreeListenForm where id = :id)
+order by form.dateSubmitted desc
+''', [teacherId: teacherId, id: id, status: State.SUBMITTED])
+            case ListType.EXPR:
+                return dataAccessService.getLong('''
+select form.id
+from FreeListenForm form, FreeListenSettings settings
+where form.term = settings.term
+and current_date not between settings.checkStartDate and settings.checkEndDate
+and form.checker.id = :teacherId
 and form.status = :status
 and form.dateSubmitted < (select dateSubmitted from FreeListenForm where id = :id)
 order by form.dateSubmitted desc
@@ -169,8 +241,21 @@ order by form.dateChecked asc
             case ListType.TODO:
                 return dataAccessService.getLong('''
 select form.id
-from FreeListenForm form
-where form.checker.id = :teacherId
+from FreeListenForm form, FreeListenSettings settings
+where form.term = settings.term
+and current_date between settings.checkStartDate and settings.checkEndDate
+and form.checker.id = :teacherId
+and form.status = :status
+and form.dateSubmitted > (select dateSubmitted from FreeListenForm where id = :id)
+order by form.dateSubmitted asc
+''', [teacherId: teacherId, id: id, status: State.SUBMITTED])
+            case ListType.EXPR:
+                return dataAccessService.getLong('''
+select form.id
+from FreeListenForm form, FreeListenSettings settings
+where form.term = settings.term
+and current_date not between settings.checkStartDate and settings.checkEndDate
+and form.checker.id = :teacherId
 and form.status = :status
 and form.dateSubmitted > (select dateSubmitted from FreeListenForm where id = :id)
 order by form.dateSubmitted asc
@@ -186,6 +271,10 @@ and form.dateChecked < (select dateChecked from FreeListenForm where id = :id)
 order by form.dateChecked desc
 ''', [teacherId: teacherId, id: id, status: State.SUBMITTED])
         }
+    }
+
+    def getSettings(Integer termId) {
+        FreeListenSettings.get(termId)
     }
 
     void accept(AcceptCommand cmd, String teacherId, UUID workitemId) {

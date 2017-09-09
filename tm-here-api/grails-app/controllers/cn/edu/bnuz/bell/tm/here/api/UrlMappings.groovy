@@ -13,6 +13,9 @@ class UrlMappings {
             "/freeListens"(resources: 'freeListenCheck', includes: ['index']) {
                 "/workitems"(resources: 'freeListenCheck', includes: ['show', 'patch'])
                 "/approvers"(controller: 'freeListenCheck', action: 'approvers', method: 'GET')
+                collection {
+                    "/settings"(controller: 'freeListenCheck', action: 'settings', method: 'GET')
+                }
             }
             "/courseClasses"(resources: 'teacherCourseClass', includes: ['index', 'show']) {
                 "/code"(controller: 'teacherCourseClass', action: 'code', method: 'GET')

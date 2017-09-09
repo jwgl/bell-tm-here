@@ -3,7 +3,7 @@ package cn.edu.bnuz.bell.here
 import cn.edu.bnuz.bell.http.BadRequestException
 import cn.edu.bnuz.bell.http.ForbiddenException
 import cn.edu.bnuz.bell.http.NotFoundException
-import cn.edu.bnuz.bell.master.TermService
+import cn.edu.bnuz.bell.master.Term
 import cn.edu.bnuz.bell.operation.TaskSchedule
 import cn.edu.bnuz.bell.organization.Student
 import cn.edu.bnuz.bell.organization.Teacher
@@ -13,20 +13,19 @@ import cn.edu.bnuz.bell.workflow.commands.SubmitCommand
 import grails.gorm.transactions.Transactional
 
 import javax.annotation.Resource
-import java.time.LocalDate
 
 @Transactional
 class FreeListenFormService {
-    TermService termService
     SystemConfigService systemConfigService
 
     @Resource(name='freeListenFormStateHandler')
     DomainStateMachineHandler domainStateMachineHandler
 
-    def list(String studentId, Integer offset, Integer max) {
+    def list(Term term, String studentId, Integer offset, Integer max) {
         def forms = FreeListenForm.executeQuery '''
 select new map(
   form.id as id,
+  form.term.id as term,
   form.reason as reason,
   form.dateCreated as dateCreated,
   form.status as status
@@ -37,19 +36,10 @@ order by form.dateCreated desc
 ''', [studentId: studentId], [offset: offset, max: max]
 
         return [
-                forms: forms,
-                count: FreeListenForm.countByStudent(Student.load(studentId)),
-                config: getDateConfig(),
-                notice: systemConfigService.get(FreeListenForm.CONFIG_NOTICE, ''),
-        ]
-    }
-
-    def getDateConfig() {
-        def today = LocalDate.now()
-        [
-                startDate: systemConfigService.get(FreeListenForm.CONFIG_START_DATE, today),
-                endDate: systemConfigService.get(FreeListenForm.CONFIG_END_DATE, today),
-                today: today,
+                forms   : forms,
+                count   : FreeListenForm.countByStudent(Student.load(studentId)),
+                settings: FreeListenSettings.get(term.id),
+                notice  : systemConfigService.get(FreeListenForm.CONFIG_NOTICE, ''),
         ]
     }
 
@@ -129,19 +119,21 @@ where form.student.id = :studentId
             throw new ForbiddenException()
         }
 
-        def config = getDateConfig()
-        if (config.today >= config.startDate && config.today <= config.endDate) {
+        def termId = form.term as Integer
+        def settings = FreeListenSettings.get(termId)
+        if (settings.betweenApplyDateRange()) {
             form.editable = domainStateMachineHandler.canUpdate(form)
         } else {
             form.editable = false
         }
 
-        def studentSchedules = getStudentSchedules(form.term, studentId)
+        def studentSchedules = getStudentSchedules(termId, studentId)
         def departmentSchedules = findDepartmentOtherSchedules(form.id)
         return [
                 form: form,
                 studentSchedules: studentSchedules,
                 departmentSchedules: departmentSchedules,
+                settings: settings,
         ]
     }
 
@@ -156,11 +148,11 @@ where form.student.id = :studentId
             throw new BadRequestException()
         }
 
-        def schedules = getStudentSchedules(form.term, studentId)
-
+        def termId = form.term as Integer
         return [
                 form: form,
-                schedules: schedules,
+                schedules: getStudentSchedules(termId, studentId),
+                settings : FreeListenSettings.get(termId),
         ]
     }
 
@@ -278,7 +270,7 @@ where (courseClass.term.id,
                 schedules.remove(schedule)
                 schedules.findAll {it.courseClassId == schedule.courseClassId}.forEach { other ->
                     def otherGroup = groups[other.dayOfWeek * 100 + other.startSection]
-                    group.remove(other)
+                    otherGroup.remove(other)
                     schedules.remove(other)
                 }
             }
@@ -287,38 +279,38 @@ where (courseClass.term.id,
         return schedules
     }
 
-    def getFormForCreate(String studentId) {
-        checkOpeningDate()
+    def getFormForCreate(Term term, String studentId) {
+        def config = FreeListenSettings.findByTerm(term)
+        if (!config.betweenApplyDateRange()) {
+            throw new BadRequestException()
+        }
 
-        def term = termService.activeTerm
         def schedules = getStudentSchedules(term.id, studentId)
         def student = Student.get(studentId)
         return [
-                term: [
-                        startWeek: term.startWeek,
-                        endWeek: term.endWeek,
-                        currentWeek: term.currentWeek,
-                ],
-                form: [
-                        term: term.id,
-                        studentId: student.id,
-                        studentName: student.name,
-                        atSchool: student.atSchool,
-                        items: [],
+                form     : [
+                        term        : term.id,
+                        studentId   : student.id,
+                        studentName : student.name,
+                        atSchool    : student.atSchool,
+                        items       : [],
                         existedItems: findExistedFreeListenItems(term.id, studentId, 0),
                 ],
                 schedules: schedules,
+                settings : FreeListenSettings.get(term.id),
         ]
     }
 
-    FreeListenForm create(String studentId, FreeListenFormCommand cmd) {
-        checkOpeningDate()
+    FreeListenForm create(Term term, String studentId, FreeListenFormCommand cmd) {
+        def config = FreeListenSettings.findByTerm(term)
+        if (!config.betweenApplyDateRange()) {
+            throw new BadRequestException()
+        }
 
         def now = new Date()
-
         FreeListenForm form = new FreeListenForm(
                 student: Student.load(studentId),
-                term: termService.activeTerm,
+                term: term,
                 reason: cmd.reason,
                 checker: Teacher.load(cmd.checkerId),
                 dateCreated: now,
@@ -340,12 +332,14 @@ where (courseClass.term.id,
     }
 
     FreeListenForm update(String studentId, FreeListenFormCommand cmd) {
-        checkOpeningDate()
-
         FreeListenForm form = FreeListenForm.get(cmd.id)
 
         if (!form) {
             throw new NotFoundException()
+        }
+
+        if (!FreeListenSettings.get(form.term.id).betweenApplyDateRange()) {
+            throw new BadRequestException()
         }
 
         if (form.student.id != studentId) {
@@ -400,12 +394,14 @@ where (courseClass.term.id,
     }
 
     def submit(String studentId, SubmitCommand cmd) {
-        checkOpeningDate()
-
         FreeListenForm form = FreeListenForm.get(cmd.id)
 
         if (!form) {
             throw new NotFoundException()
+        }
+
+        if (!FreeListenSettings.get(form.term.id).betweenApplyDateRange()) {
+            throw new BadRequestException()
         }
 
         if (form.student.id != studentId) {
@@ -420,12 +416,5 @@ where (courseClass.term.id,
 
         form.dateSubmitted = new Date()
         form.save()
-    }
-
-    def checkOpeningDate() {
-        def config = getDateConfig()
-        if (config.today < config.startDate || config.today > config.endDate) {
-            throw new BadRequestException()
-        }
     }
 }
