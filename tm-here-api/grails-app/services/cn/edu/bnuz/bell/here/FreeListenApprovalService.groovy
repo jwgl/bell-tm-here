@@ -161,7 +161,7 @@ order by form.dateSubmitted desc
 
     void accept(AcceptCommand cmd, String userId, UUID workitemId) {
         FreeListenForm form = FreeListenForm.get(cmd.id)
-        domainStateMachineHandler.accept(form, userId, Activities.APPROVE, cmd.comment, workitemId, cmd.to)
+        domainStateMachineHandler.accept(form, userId, Activities.APPROVE, cmd.comment, workitemId, form.student.id)
         form.approver = Teacher.load(userId)
         form.dateApproved = new Date()
         form.save()
