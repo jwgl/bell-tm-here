@@ -198,7 +198,7 @@ where taskStudent.student.id = :studentId
      * @param formId 免听ID
      */
     def findDepartmentOtherSchedules(Long formId) {
-        List schedules = TaskSchedule.executeQuery '''
+        TaskSchedule.executeQuery '''
 select new map(
   schedule.id as id,
   task.id as taskId,
@@ -226,57 +226,42 @@ join courseClass.teacher courseTeacher
 join schedule.teacher scheduleTeacher
 left join task.courseItem courseItem
 left join schedule.place place
-where (courseClass.term.id,
-       courseClass.department.id,
-       course.id,
-       coalesce(courseItem.id, '0')) in (
-    select courseClass.term.id,
-        courseClass.department.id,
-        courseClass.course.id,
-        coalesce(courseItem.id, '0')
+where (courseClass.term.id, courseClass.department.id, course.id) in (
+    select courseClass2.term.id, courseClass2.department.id, courseClass2.course.id
     from FreeListenForm form
     join form.items item
     join item.taskSchedule schedule
     join schedule.task task
-    join task.courseClass courseClass
-    left join task.courseItem courseItem
+    join task.courseClass courseClass2
     where form.id = :formId
-) and courseClass.id not in (
-    select task.courseClass.id
-    from FreeListenForm form
-    join form.items item
-    join item.taskSchedule schedule
-    join schedule.task task
-    where form.id = :formId     
-) and (schedule.dayOfWeek, schedule.startSection) not in (
-    select schedule.dayOfWeek, schedule.startSection
-    from TaskSchedule schedule
-    join schedule.task task
+    and courseClass2.id <> courseClass.id
+) and not exists (
+    select 1
+    from TaskSchedule ts
+    join ts.task task
     join task.students taskStudent
-    where taskStudent.student = (
-        select student from FreeListenForm where id = :formId
+    join task.courseClass courseClass
+    where (courseClass.term, taskStudent.student) = (
+        select term, student from FreeListenForm where id = :formId
+    )
+    and ts.dayOfWeek = schedule.dayOfWeek
+    and exists (
+        select 1
+        from SerialNumber s1
+        join SerialNumber s2 on s1.id = s2.id
+        where s1.id between ts.startSection and ts.startSection + ts.totalSection -1
+          and s2.id between schedule.startSection and schedule.startSection + schedule.totalSection -1
+    )
+    and exists (
+        select 1
+        from SerialNumber s1
+        join SerialNumber s2 on s1.id = s2.id
+        where s1.id between ts.startWeek and ts.endWeek
+          and (ts.oddEven = 0 or s1.oddEven = ts.oddEven)
+          and s2.id between schedule.startWeek and schedule.endWeek
+          and (schedule.oddEven = 0 or s2.oddEven = schedule.oddEven)
     )
 )''', [formId: formId]
-
-        Map<Integer, List> groups = schedules.groupBy {s ->
-            s.dayOfWeek * 100 + s.startSection
-        }
-
-        // 公共课（如英语）同一课号的教学班很多，这里进行限制显示的数量
-        def maxLength = 3
-        groups.forEach { key, group ->
-            while (group.size() > maxLength) {
-                def schedule = group.pop()
-                schedules.remove(schedule)
-                schedules.findAll {it.courseClassId == schedule.courseClassId}.forEach { other ->
-                    def otherGroup = groups[other.dayOfWeek * 100 + other.startSection]
-                    otherGroup.remove(other)
-                    schedules.remove(other)
-                }
-            }
-        }
-
-        return schedules
     }
 
     def getFormForCreate(Term term, String studentId) {
