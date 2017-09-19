@@ -44,6 +44,9 @@ class FreeListenSettings {
         today >= applyStartDate && today <= applyEndDate
     }
 
+    boolean betweenCheckDateRange() {
+        today >= checkStartDate && today <= checkEndDate
+    }
 
     static transients = ['today']
 
