@@ -121,7 +121,7 @@ where form.student.id = :studentId
 
         def termId = form.term as Integer
         def settings = FreeListenSettings.get(termId)
-        if (settings.betweenApplyDateRange()) {
+        if (settings.betweenCheckDateRange()) {
             form.editable = domainStateMachineHandler.canUpdate(form)
         } else {
             form.editable = false
@@ -323,7 +323,7 @@ where (courseClass.term.id, courseClass.department.id, course.id) in (
             throw new NotFoundException()
         }
 
-        if (!FreeListenSettings.get(form.term.id).betweenApplyDateRange()) {
+        if (!FreeListenSettings.get(form.term.id).betweenCheckDateRange()) {
             throw new BadRequestException()
         }
 
