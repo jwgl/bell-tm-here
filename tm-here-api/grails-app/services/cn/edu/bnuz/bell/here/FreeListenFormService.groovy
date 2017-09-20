@@ -385,8 +385,8 @@ where (courseClass.term.id, courseClass.department.id, course.id) in (
             throw new NotFoundException()
         }
 
-        if (!FreeListenSettings.get(form.term.id).betweenApplyDateRange()) {
-            throw new BadRequestException()
+        if (!FreeListenSettings.get(form.term.id).betweenCheckDateRange()) {
+            throw new BadRequestException("Exceed check dates.")
         }
 
         if (form.student.id != studentId) {
@@ -394,7 +394,7 @@ where (courseClass.term.id, courseClass.department.id, course.id) in (
         }
 
         if (!domainStateMachineHandler.canSubmit(form)) {
-            throw new BadRequestException()
+            throw new BadRequestException("Can not submit.")
         }
 
         domainStateMachineHandler.submit(form, studentId, cmd.to, cmd.comment, cmd.title)
