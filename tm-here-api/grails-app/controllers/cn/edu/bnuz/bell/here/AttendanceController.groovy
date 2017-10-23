@@ -16,6 +16,7 @@ class AttendanceController implements ServiceExceptionHandler {
     TermService termService
     SecurityService securityService
     StudentService studentService
+    RollcallTermService rollcallTermService
 
     /**
      * 管理人员查看考勤统计
@@ -89,5 +90,13 @@ class AttendanceController implements ServiceExceptionHandler {
         } else {
             throw new ForbiddenException()
         }
+    }
+
+    /**
+     * 获取考勤学期
+     */
+    @PreAuthorize('hasAuthority("PERM_EXAM_DISQUAL_DEPT_ADMIN")')
+    def terms() {
+        renderJson rollcallTermService.getTerms()
     }
 }

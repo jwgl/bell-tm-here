@@ -12,6 +12,7 @@ class TeacherCourseClassController implements ServiceExceptionHandler {
     TeacherCourseClassService teacherCourseClassService
     SecurityService securityService
     TermService termService
+    RollcallTermService rollcallTermService
 
     def index(String teacherId) {
         def termId = params.int('termId') ?: termService.activeTerm.id
@@ -24,6 +25,10 @@ class TeacherCourseClassController implements ServiceExceptionHandler {
 
     def code(String teacherId, String teacherCourseClassId) {
         render teacherCourseClassService.getCourseClassCode(teacherId, UUID.fromString(teacherCourseClassId))
+    }
+
+    def terms(String teacherId) {
+        renderJson rollcallTermService.getTerms(teacherId)
     }
 
     private String getDepartmentId(String teacherId) {

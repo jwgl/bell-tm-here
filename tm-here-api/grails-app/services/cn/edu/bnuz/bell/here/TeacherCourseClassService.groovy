@@ -38,12 +38,17 @@ select distinct new map(
   courseClass.startWeek as startWeek,
   courseClass.endWeek as endWeek,
   course.name as course,
+  courseClass.teacher.id as teacherId,
   department.name as department,
   (
     select sum(taskSchedule.totalSection * floor((taskSchedule.endWeek - taskSchedule.startWeek + 1) / (case taskSchedule.oddEven when 0 then 1 else 2 end)))
     from courseClass.tasks task
     join task.schedules taskSchedule
-  ) as totalSection
+  ) as totalSection,
+  courseClass.term.id as termId,
+  (
+    select active from Term where id = courseClass.term.id
+  ) as activeTerm
 )
 from CourseClass courseClass
 join courseClass.course course
