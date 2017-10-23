@@ -19,6 +19,9 @@ class UrlMappings {
             }
             "/courseClasses"(resources: 'teacherCourseClass', includes: ['index', 'show']) {
                 "/code"(controller: 'teacherCourseClass', action: 'code', method: 'GET')
+                collection {
+                    "/terms"(controller: 'teacherCourseClass', action: 'terms', method: 'GET')
+                }
             }
             "/settings"(resources: 'teacherSetting', includes: ['update'])
         }
@@ -49,6 +52,7 @@ class UrlMappings {
         "/attendances"(resources: 'attendance', includes: ['index', 'show']) {
             collection {
                 "/adminClasses"(controller: 'attendance', action: 'adminClasses', method: 'GET')
+                "/terms"(controller: 'attendance', action: 'terms', method: 'GET')
             }
         }
 
