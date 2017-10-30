@@ -4,10 +4,12 @@ import cn.edu.bnuz.bell.http.BadRequestException
 import cn.edu.bnuz.bell.http.ServiceExceptionHandler
 import cn.edu.bnuz.bell.master.TermService
 import cn.edu.bnuz.bell.security.SecurityService
+import org.springframework.security.access.prepost.PreAuthorize
 
 /**
  * 按教师查询排课的教学班情况。
  */
+@PreAuthorize('hasAnyAuthority("PERM_COURSE_CLASS_READ", "PERM_EXAM_DISQUAL_DEPT_ADMIN")')
 class TeacherCourseClassController implements ServiceExceptionHandler {
     TeacherCourseClassService teacherCourseClassService
     SecurityService securityService
@@ -34,7 +36,7 @@ class TeacherCourseClassController implements ServiceExceptionHandler {
     private String getDepartmentId(String teacherId) {
         if (this.securityService.hasPermission('PERM_EXAM_DISQUAL_DEPT_ADMIN')) {
             return this.securityService.departmentId
-        } else if (this.securityService.hasPermission('PERM_EXAM_DISQUAL_WRITE') && this.securityService.userId == teacherId) {
+        } else if (this.securityService.userId == teacherId) {
             return '%'
         } else {
             throw new BadRequestException()

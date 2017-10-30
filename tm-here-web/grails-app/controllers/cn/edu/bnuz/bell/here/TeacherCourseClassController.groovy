@@ -4,7 +4,9 @@ import cn.edu.bnuz.bell.report.ReportClientService
 import cn.edu.bnuz.bell.report.ReportRequest
 import cn.edu.bnuz.bell.report.ReportResponse
 import org.springframework.http.HttpStatus
+import org.springframework.security.access.prepost.PreAuthorize
 
+@PreAuthorize('hasAuthority("PERM_COURSE_CLASS_EXECUTE")')
 class TeacherCourseClassController {
     ReportClientService reportClientService
 
