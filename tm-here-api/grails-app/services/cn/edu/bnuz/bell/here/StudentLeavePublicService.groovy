@@ -59,7 +59,7 @@ class StudentLeavePublicService {
             }
         }
 
-        if (securityService.hasRole('ROLE_COURSE_TEACHER')) {
+        if (securityService.hasRole('ROLE_TASK_SCHEDULE_TEACHER')) {
             if (dataAccessService.getInteger('''
     select count(distinct form.id)
     from StudentLeaveForm form
