@@ -14,7 +14,7 @@ class CourseClassAttendanceStats implements HibernateEntity<CourseClassAttendanc
     /**
      * 旷课
      */
-    Long absent
+    BigDecimal absent
 
     /**
      * 迟到
@@ -24,7 +24,7 @@ class CourseClassAttendanceStats implements HibernateEntity<CourseClassAttendanc
     /**
      * 早退
      */
-    Long early
+    BigDecimal early
 
     /**
      * 折合
@@ -34,7 +34,7 @@ class CourseClassAttendanceStats implements HibernateEntity<CourseClassAttendanc
     /**
      * 请假
      */
-    Long leave
+    BigDecimal leave
 
     static mapping = {
         table 'dv_dumb'

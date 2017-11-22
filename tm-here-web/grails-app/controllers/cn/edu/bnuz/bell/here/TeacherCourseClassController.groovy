@@ -6,7 +6,7 @@ import cn.edu.bnuz.bell.report.ReportResponse
 import org.springframework.http.HttpStatus
 import org.springframework.security.access.prepost.PreAuthorize
 
-@PreAuthorize('hasAuthority("PERM_COURSE_CLASS_EXECUTE")')
+@PreAuthorize('hasAnyAuthority("PERM_COURSE_CLASS_EXECUTE", "PERM_EXAM_DISQUAL_DEPT_ADMIN")')
 class TeacherCourseClassController {
     ReportClientService reportClientService
 

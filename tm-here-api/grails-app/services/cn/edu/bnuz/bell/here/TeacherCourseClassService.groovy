@@ -64,8 +64,21 @@ where courseClass.teacher.id = :teacherId
 
         def courseClass = results[0]
 
-        courseClass.rollcallDisqualRatio = 9
-        courseClass.leaveDisqualRatio = 6
+        def attendanceSettings = AttendanceSettings.executeQuery '''
+select new map(
+  absentDisqualRatio as absentDisqualRatio,
+  attendDisqualRatio as attendDisqualRatio
+)
+from AttendanceSettings
+where :termId between coalesce(startTerm.id, 00000) and coalesce(endTerm.id, 99999)
+''', [termId: courseClass.termId]
+
+        if (!attendanceSettings) {
+            throw new NotFoundException()
+        }
+
+        courseClass.absentDisqualRatio = attendanceSettings[0].absentDisqualRatio
+        courseClass.attendDisqualRatio = attendanceSettings[0].attendDisqualRatio
 
         courseClass.students = CourseClass.executeQuery '''
 select distinct new map(
