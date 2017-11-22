@@ -66,16 +66,19 @@ class AttendanceController implements ServiceExceptionHandler {
      */
     def adminClasses() {
         def termId = termService.activeTerm.id
+        def isAdmin
         def adminClasses
         if (securityService.hasRole('ROLE_ROLLCALL_DEPT_ADMIN')) {
             adminClasses = attendanceService.adminClassesByDepartment(termId, securityService.departmentId)
+            isAdmin = true
         } else if (securityService.hasRole('ROLE_STUDENT_COUNSELLOR') || securityService.hasRole('ROLE_CLASS_SUPERVISOR')) {
             adminClasses = attendanceService.adminClassesByAdministrator(termId, securityService.userId)
+            isAdmin = false
         } else {
             throw new ForbiddenException()
         }
 
-        renderJson([termId: termId, adminClasses: adminClasses])
+        renderJson([termId: termId, isAdmin: isAdmin, adminClasses: adminClasses])
     }
 
     /**

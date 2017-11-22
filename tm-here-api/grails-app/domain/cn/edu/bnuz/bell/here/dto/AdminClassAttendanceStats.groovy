@@ -24,7 +24,7 @@ class AdminClassAttendanceStats implements HibernateEntity<AdminClassAttendanceS
     /**
      * 旷课
      */
-    Long absent
+    BigDecimal absent
 
     /**
      * 迟到
@@ -34,7 +34,7 @@ class AdminClassAttendanceStats implements HibernateEntity<AdminClassAttendanceS
     /**
      * 早退
      */
-    Long early
+    BigDecimal early
 
     /**
      * 折合
@@ -44,7 +44,7 @@ class AdminClassAttendanceStats implements HibernateEntity<AdminClassAttendanceS
     /**
      * 请假
      */
-    Long leave
+    BigDecimal leave
 
     static mapping = {
         table 'dv_dumb'
