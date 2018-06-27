@@ -4,6 +4,7 @@ import cn.edu.bnuz.bell.here.dto.CourseClassAttendanceStats
 import cn.edu.bnuz.bell.http.ForbiddenException
 import cn.edu.bnuz.bell.http.NotFoundException
 import cn.edu.bnuz.bell.operation.CourseClass
+import cn.edu.bnuz.bell.operation.TaskSchedule
 import grails.gorm.transactions.Transactional
 
 @Transactional(readOnly = true)
@@ -20,8 +21,7 @@ from CourseClass courseClass
 join courseClass.course course
 join courseClass.tasks task
 join task.students taskStudent
-where exists elements(task.schedules)
- and courseClass.term.id = :termId
+where courseClass.term.id = :termId
  and courseClass.teacher.id = :teacherId
  and courseClass.department.id like :departmentId
 group by courseClass.id, courseClass.name, course.name
