@@ -7,7 +7,7 @@ import grails.gorm.transactions.Transactional
 import grails.plugin.cache.Cacheable
 
 @Transactional
-class RollcallTermService {
+class AttendanceTermService {
     SystemConfigService systemConfigService
 
     /**
@@ -35,8 +35,8 @@ order by id desc
 select distinct courseClass.term.id
 from CourseClass courseClass
 join courseClass.tasks task
-join task.schedules schedule
-where schedule.teacher.id = :teacherId
+left join task.schedules schedule
+where (schedule.teacher.id = :teacherId or courseClass.teacher.id = :teacherId)
 and courseClass.term.id >= :startTerm
 order by courseClass.term.id desc
 ''', [teacherId: teacherId, startTerm: rollcallStartTerm()])
