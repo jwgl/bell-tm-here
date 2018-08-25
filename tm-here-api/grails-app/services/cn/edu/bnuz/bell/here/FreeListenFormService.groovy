@@ -16,13 +16,11 @@ import javax.annotation.Resource
 
 @Transactional
 class FreeListenFormService {
-    SystemConfigService systemConfigService
-
     @Resource(name='freeListenFormStateHandler')
     DomainStateMachineHandler domainStateMachineHandler
 
-    def list(Term term, String studentId, Integer offset, Integer max) {
-        def forms = FreeListenForm.executeQuery '''
+    def list(String studentId, Integer offset, Integer max) {
+        FreeListenForm.executeQuery '''
 select new map(
   form.id as id,
   form.term.id as term,
@@ -34,13 +32,10 @@ from FreeListenForm form
 where form.student.id = :studentId
 order by form.dateCreated desc
 ''', [studentId: studentId], [offset: offset, max: max]
+    }
 
-        return [
-                forms   : forms,
-                count   : FreeListenForm.countByStudent(Student.load(studentId)),
-                settings: FreeListenSettings.get(term.id),
-                notice  : systemConfigService.get(FreeListenForm.CONFIG_NOTICE, ''),
-        ]
+    def listCount(String studentId) {
+        FreeListenForm.countByStudent(Student.load(studentId))
     }
 
     Map getFormInfo(Long id) {
@@ -120,6 +115,7 @@ where form.student.id = :studentId
         }
 
         def termId = form.term as Integer
+        def formId = form.id as Integer
         def settings = FreeListenSettings.get(termId)
         if (settings.betweenCheckDateRange()) {
             form.editable = domainStateMachineHandler.canUpdate(form)
@@ -128,7 +124,7 @@ where form.student.id = :studentId
         }
 
         def studentSchedules = getStudentSchedules(termId, studentId)
-        def departmentSchedules = findDepartmentOtherSchedules(form.id)
+        def departmentSchedules = findDepartmentOtherSchedules(formId)
         return [
                 form: form,
                 studentSchedules: studentSchedules,

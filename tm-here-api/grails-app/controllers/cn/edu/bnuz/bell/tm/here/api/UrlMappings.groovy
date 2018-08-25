@@ -17,8 +17,17 @@ class UrlMappings {
                     "/settings"(controller: 'freeListenCheck', action: 'settings', method: 'GET')
                 }
             }
+            "/adminClasses"(resources: 'teacherAdminClass', includes: ['index']) {
+                "/attendances"(controller: 'teacherAdminClass', action: 'attendances', method: 'GET')
+                collection {
+                    "/attendances"(controller: 'teacherAdminClass', action: 'allAttendances', method: 'GET')
+                    "/statisReport"(controller: 'teacherAdminClass',action: 'statisReport', method: 'GET')
+                    "/detailReport"(controller: 'teacherAdminClass',action: 'detailReport', method: 'GET')
+                }
+            }
             "/courseClasses"(resources: 'teacherCourseClass', includes: ['index', 'show']) {
                 "/code"(controller: 'teacherCourseClass', action: 'code', method: 'GET')
+                "/report"(controller: 'teacherCourseClass', action: 'report', method: 'GET')
                 collection {
                     "/terms"(controller: 'teacherCourseClass', action: 'terms', method: 'GET')
                 }
@@ -27,7 +36,7 @@ class UrlMappings {
         }
 
         "/students"(resources: 'student', includes: []) {
-            "/attendances"(controller: 'attendance', action: 'student', method: 'GET')
+            "/attendances"(resources: 'studentAttendance', includes: ['index'])
             "/leaves"(resources: 'studentLeaveForm') {
                 "/approvers"(controller: 'studentLeaveForm', action: 'approvers', method: 'GET')
             }
@@ -45,14 +54,9 @@ class UrlMappings {
             }
         }
 
-        "/adminClasses"(resources: 'adminClass', includes: []) {
-            "/attendances"(controller: 'attendance', action: 'adminClass', method: 'GET')
-        }
-
-        "/attendances"(resources: 'attendance', includes: ['index', 'show']) {
+        "/attendances"(resources: 'attendance', includes: ['show']) {
             collection {
-                "/adminClasses"(controller: 'attendance', action: 'adminClasses', method: 'GET')
-                "/terms"(controller: 'attendance', action: 'terms', method: 'GET')
+                "/terms"(action: 'terms', method: 'GET')
             }
         }
 
@@ -63,12 +67,27 @@ class UrlMappings {
         }
 
         "/departments"(resources: 'department', includes: []) {
+            "/adminClasses"(resources: 'departmentAdminClass', includes: ['index', 'show']) {
+                "/attendances"(controller: 'departmentAdminClass', action: 'attendances', method: 'GET')
+                collection {
+                    "/attendances"(controller: 'departmentAdminClass', action: 'allAttendances', method: 'GET')
+                    "/statisReport"(controller: 'departmentAdminClass',action: 'statisReport', method: 'GET')
+                    "/detailReport"(controller: 'departmentAdminClass',action: 'detailReport', method: 'GET')
+                    "/disqualReport"(controller: 'departmentAdminClass',action: 'disqualReport', method: 'GET')
+                }
+            }
             "/courseClassTeachers"(controller: 'departmentCourseClass', action: 'courseClassTeachers', method: 'GET')
+            "/courseClasses"(resources: 'departmentCourseClass', includes: ['show'])
         }
 
         "/leaves"(resources: 'studentLeavePublic', includes: ['show'])
 
-        "/freeListens"(resources: 'freeListenPublic', includes: ['show'])
+        "/freeListens"(resources: 'freeListenPublic', includes: ['show']) {
+            collection {
+                "/settings"(controller: 'freeListenPublic', action: 'settings', method: 'GET')
+                "/notice"(controller: 'freeListenPublic', action: 'notice', method: 'GET')
+            }
+        }
 
         "500"(view: '/error')
         "404"(view: '/notFound')

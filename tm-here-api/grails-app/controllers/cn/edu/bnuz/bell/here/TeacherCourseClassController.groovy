@@ -3,8 +3,14 @@ package cn.edu.bnuz.bell.here
 import cn.edu.bnuz.bell.http.BadRequestException
 import cn.edu.bnuz.bell.http.ServiceExceptionHandler
 import cn.edu.bnuz.bell.master.TermService
+import cn.edu.bnuz.bell.report.ReportClientService
+import cn.edu.bnuz.bell.report.ReportRequest
+import cn.edu.bnuz.bell.report.ReportResponse
 import cn.edu.bnuz.bell.security.SecurityService
+import org.grails.web.servlet.mvc.GrailsWebRequest
+import org.springframework.http.HttpStatus
 import org.springframework.security.access.prepost.PreAuthorize
+import org.springframework.web.context.request.RequestContextHolder
 
 /**
  * 按教师查询排课的教学班情况。
@@ -15,6 +21,7 @@ class TeacherCourseClassController implements ServiceExceptionHandler {
     SecurityService securityService
     TermService termService
     AttendanceTermService attendanceTermService
+    ReportClientService reportClientService
 
     def index(String teacherId) {
         def termId = params.int('termId') ?: termService.activeTerm.id
@@ -31,6 +38,16 @@ class TeacherCourseClassController implements ServiceExceptionHandler {
 
     def terms(String teacherId) {
         renderJson attendanceTermService.getTerms(teacherId)
+    }
+
+    def report(String teacherId, String teacherCourseClassId) {
+        def courseClassCode = teacherCourseClassService.getCourseClassCode(teacherId, UUID.fromString(teacherCourseClassId))
+        def reportRequest = new ReportRequest(
+                reportId: courseClassCode,
+                reportName: 'attendance-statis-by-course-class',
+                parameters: [courseClassId: teacherCourseClassId]
+        )
+        reportClientService.runAndRender(reportRequest, response)
     }
 
     private String getDepartmentId(String teacherId) {

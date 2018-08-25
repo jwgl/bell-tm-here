@@ -15,7 +15,8 @@ class FreeListenFormController implements ServiceExceptionHandler {
     def index(String studentId) {
         def offset = params.int('offset') ?: 0
         def max = params.int('max') ?: 10
-        renderJson freeListenFormService.list(termService.activeTerm, studentId, offset, max)
+        renderCount freeListenFormService.listCount(studentId)
+        renderJson freeListenFormService.list(studentId, offset, max)
     }
 
     def show(String studentId, Long id) {

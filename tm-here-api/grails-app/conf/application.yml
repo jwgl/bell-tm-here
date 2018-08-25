@@ -139,3 +139,5 @@ bell:
             prefixes:
                 - dv
                 - et
+    report:
+        service: tm-report

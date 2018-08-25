@@ -35,6 +35,7 @@ class StudentLeaveStateMachineConfiguration extends EnumStateMachineConfigurerAd
                 .state(State.REJECTED,  [actions.logEntryAction(), actions.rejectedEntryAction()], [actions.workitemProcessedAction()])
                 .state(State.APPROVED,  [actions.logEntryAction(), leaveApprovedEntryAction()], [actions.workitemProcessedAction()])
                 .state(State.FINISHED,  [actions.logEntryAction(), leaveFinishedEntryAction()], null)
+                .state(State.CLOSED)
     }
 
     @Override

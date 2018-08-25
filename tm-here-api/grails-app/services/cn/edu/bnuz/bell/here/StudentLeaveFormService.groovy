@@ -27,7 +27,7 @@ class StudentLeaveFormService {
     DomainStateMachineHandler domainStateMachineHandler
 
     def list(String studentId, Integer offset, Integer max) {
-        def forms = StudentLeaveForm.executeQuery '''
+        StudentLeaveForm.executeQuery '''
 select new map(
   form.id as id,
   form.type as type,
@@ -39,10 +39,10 @@ from StudentLeaveForm form
 where form.student.id = :studentId
 order by form.dateCreated desc
 ''', [studentId: studentId], [offset: offset, max: max]
-        return [
-                forms: forms,
-                count: StudentLeaveForm.countByStudent(Student.load(studentId))
-        ]
+    }
+
+    def listCount(String studentId) {
+        StudentLeaveForm.countByStudent(Student.load(studentId))
     }
 
     Map getFormInfo(Long id) {

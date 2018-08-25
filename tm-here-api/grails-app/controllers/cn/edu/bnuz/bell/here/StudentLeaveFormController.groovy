@@ -13,6 +13,7 @@ class StudentLeaveFormController implements ServiceExceptionHandler {
     def index(String studentId) {
         def offset = params.int('offset') ?: 0
         def max = params.int('max') ?: 10
+        renderCount studentLeaveFormService.listCount(studentId)
         renderJson studentLeaveFormService.list(studentId, offset, max)
     }
 
