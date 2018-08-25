@@ -120,7 +120,6 @@ where form.status = 'APPROVED'
 
 
     def getSettings(Term term) {
-        settings:
         FreeListenSettings.get(term.id)
     }
 }

@@ -13,7 +13,6 @@ if(cause instanceof AccessDeniedException) {
     response.status 500
 }
 
-
 json {
     if(cause instanceof AccessDeniedException) {
         message "Access is denied"
