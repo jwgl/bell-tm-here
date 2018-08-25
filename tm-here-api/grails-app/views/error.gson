@@ -1,6 +1,24 @@
-response.status 500
+import org.apache.commons.lang.exception.ExceptionUtils
+import org.springframework.security.access.AccessDeniedException
 
-json {    
-    message "Internal server error"
-    error 500
+
+model {
+    Exception exception
+}
+
+def cause = ExceptionUtils.getRootCause(exception)
+if(cause instanceof AccessDeniedException) {
+    response.status 403
+} else {
+    response.status 500
+}
+
+json {
+    if(cause instanceof AccessDeniedException) {
+        message "Access is denied"
+        error 403
+    } else {
+        message "Internal server error"
+        error 500
+    }
 }

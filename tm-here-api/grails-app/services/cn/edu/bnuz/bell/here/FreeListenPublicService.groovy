@@ -2,6 +2,7 @@ package cn.edu.bnuz.bell.here
 
 import cn.edu.bnuz.bell.http.ForbiddenException
 import cn.edu.bnuz.bell.http.NotFoundException
+import cn.edu.bnuz.bell.master.Term
 import cn.edu.bnuz.bell.organization.StudentService
 import cn.edu.bnuz.bell.security.SecurityService
 import cn.edu.bnuz.bell.service.DataAccessService
@@ -25,12 +26,17 @@ class FreeListenPublicService {
             throw new ForbiddenException()
         }
 
-        def studentSchedules = freeListenFormService.getStudentSchedules(form.term, form.studentId)
-        def departmentSchedules = freeListenFormService.findDepartmentOtherSchedules(form.id)
+        def termId = form.term as Integer
+        def studentId = form.studentId as String
+        def formId = form.id as Integer
+        def settings = FreeListenSettings.get(termId)
+        def studentSchedules = freeListenFormService.getStudentSchedules(termId, studentId)
+        def departmentSchedules = freeListenFormService.findDepartmentOtherSchedules(formId)
         return [
-                form: form,
-                studentSchedules: studentSchedules,
+                form               : form,
+                studentSchedules   : studentSchedules,
                 departmentSchedules: departmentSchedules,
+                settings           : settings,
         ]
     }
 
@@ -110,5 +116,10 @@ where form.status = 'APPROVED'
   and taskSchedule.totalSection = :totalSection
   and taskSchedule.teacher.id = :teacherId
 ''', cmd as Map
+    }
+
+
+    def getSettings(Term term) {
+        FreeListenSettings.get(term.id)
     }
 }
