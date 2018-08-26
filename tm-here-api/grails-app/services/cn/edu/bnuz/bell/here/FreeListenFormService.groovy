@@ -319,11 +319,11 @@ where (courseClass.term.id, courseClass.department.id, course.id) in (
             throw new NotFoundException()
         }
 
-        if (!FreeListenSettings.get(form.term.id).betweenCheckDateRange()) {
+        if (!FreeListenSettings.get(form.termId).betweenCheckDateRange()) {
             throw new BadRequestException()
         }
 
-        if (form.student.id != studentId) {
+        if (form.studentId != studentId) {
             throw new ForbiddenException()
         }
 
@@ -359,7 +359,7 @@ where (courseClass.term.id, courseClass.department.id, course.id) in (
             throw new NotFoundException()
         }
 
-        if (form.student.id != studentId) {
+        if (form.studentId != studentId) {
             throw new ForbiddenException()
         }
 
@@ -381,11 +381,11 @@ where (courseClass.term.id, courseClass.department.id, course.id) in (
             throw new NotFoundException()
         }
 
-        if (!FreeListenSettings.get(form.term.id).betweenCheckDateRange()) {
+        if (!FreeListenSettings.get(form.termId).betweenCheckDateRange()) {
             throw new BadRequestException("Exceed check dates.")
         }
 
-        if (form.student.id != studentId) {
+        if (form.studentId != studentId) {
             throw new ForbiddenException()
         }
 

@@ -185,8 +185,8 @@ order by form.dateChecked desc
         domainStateMachineHandler.checkReviewer(id, teacherId, activity)
 
         def termId = form.term as Integer
-        def studentSchedules = freeListenFormService.getStudentSchedules(termId, form.studentId)
-        def departmentSchedules = freeListenFormService.findDepartmentOtherSchedules(form.id)
+        def studentSchedules = freeListenFormService.getStudentSchedules(termId, form.studentId as String)
+        def departmentSchedules = freeListenFormService.findDepartmentOtherSchedules(form.id as Long)
         return [
                 form               : form,
                 studentSchedules   : studentSchedules,

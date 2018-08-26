@@ -102,7 +102,7 @@ and taskSchedule.id in (:taskScheduleIds)
             throw new NotFoundException()
         }
 
-        if (rollcall.teacher.id != teacherId) {
+        if (rollcall.teacherId != teacherId) {
             throw new ForbiddenException()
         }
 
@@ -125,7 +125,7 @@ and taskSchedule.id in (:taskScheduleIds)
             throw new NotFoundException()
         }
 
-        if (rollcall.teacher.id != teacherId) {
+        if (rollcall.teacherId != teacherId) {
             throw new ForbiddenException()
         }
 
