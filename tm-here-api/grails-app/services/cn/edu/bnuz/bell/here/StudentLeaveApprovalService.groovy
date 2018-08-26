@@ -260,7 +260,7 @@ order by form.dateApproved desc
      */
     void accept(String userId, AcceptCommand cmd, UUID workitemId) {
         StudentLeaveForm form = StudentLeaveForm.get(cmd.id)
-        domainStateMachineHandler.accept(form, userId, Activities.APPROVE, cmd.comment, workitemId, form.student.id)
+        domainStateMachineHandler.accept(form, userId, Activities.APPROVE, cmd.comment, workitemId, form.studentId as String)
         form.approver = Teacher.load(userId)
         form.dateApproved = new Date()
         form.save()

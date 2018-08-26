@@ -33,7 +33,7 @@ class Application extends GrailsAutoConfiguration implements EnvironmentAware {
         { ->
             JSON.registerObjectMarshaller(FreeListenSettings) { FreeListenSettings it ->
                 [
-                        term          : it.term.id,
+                        term          : it.termId,
                         applyStartDate: it.applyStartDate,
                         applyEndDate  : it.applyEndDate,
                         checkStartDate: it.checkStartDate,

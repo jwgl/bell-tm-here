@@ -50,6 +50,6 @@ class TimeslotAttendanceStats implements HibernateEntity<TimeslotAttendanceStats
      * @param rollcall 考勤
      */
     static statsByRollcall(Rollcall rollcall) {
-        findWithSql("select * from sp_get_student_attendance_stats_by_task_schedule_student($rollcall.taskScheduleId, $rollcall.student.id)")
+        findWithSql("select * from sp_get_student_attendance_stats_by_task_schedule_student($rollcall.taskScheduleId, $rollcall.studentId)")
     }
 }
