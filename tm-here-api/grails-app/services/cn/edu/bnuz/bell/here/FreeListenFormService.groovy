@@ -258,14 +258,14 @@ and not exists (
     and taskStudent.student.id = :studentId
     and ts.dayOfWeek = schedule.dayOfWeek
     and exists (
-        select s1.id
+        select 1
         from SerialNumber s1
         join SerialNumber s2 on s1.id = s2.id
         where s1.id between ts.startSection and ts.startSection + ts.totalSection - 1
           and s2.id between schedule.startSection and schedule.startSection + schedule.totalSection - 1
     )
     and exists (
-        select s1.id
+        select 1
         from SerialNumber s1
         join SerialNumber s2 on s1.id = s2.id
         where s1.id between ts.startWeek and ts.endWeek
