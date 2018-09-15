@@ -16,7 +16,7 @@ import javax.annotation.Resource
 
 @Transactional
 class FreeListenFormService {
-    @Resource(name='freeListenFormStateHandler')
+    @Resource(name = 'freeListenFormStateHandler')
     DomainStateMachineHandler domainStateMachineHandler
 
     def list(String studentId, Integer offset, Integer max) {
@@ -126,10 +126,10 @@ where form.student.id = :studentId
         def studentSchedules = getStudentSchedules(termId, studentId)
         def departmentSchedules = findDepartmentOtherSchedules(formId)
         return [
-                form: form,
-                studentSchedules: studentSchedules,
+                form               : form,
+                studentSchedules   : studentSchedules,
                 departmentSchedules: departmentSchedules,
-                settings: settings,
+                settings           : settings,
         ]
     }
 
@@ -146,7 +146,7 @@ where form.student.id = :studentId
 
         def termId = form.term as Integer
         return [
-                form: form,
+                form     : form,
                 schedules: getStudentSchedules(termId, studentId),
                 settings : FreeListenSettings.get(termId),
         ]
@@ -189,11 +189,33 @@ where taskStudent.student.id = :studentId
 ''', [termId: termId, studentId: studentId]
     }
 
-     /**
+    /**
      * 查找免听项之外同一开课单位其它开课情况
      * @param formId 免听ID
      */
     def findDepartmentOtherSchedules(Long formId) {
+        def result = FreeListenForm.executeQuery '''
+select new map(
+  courseClass.term.id as termId,
+  form.student.id as studentId,
+  courseClass.department.id as departmentId,
+  courseClass.id as courseClassId,
+  courseClass.course.id as courseId
+)
+from FreeListenForm form
+join form.items item
+join item.taskSchedule schedule
+join schedule.task task
+join task.courseClass courseClass
+where form.id = :formId
+''', [formId: formId]
+
+        if (!result) {
+            throw new NotFoundException()
+        }
+
+        def courseClassInfo = result[0]
+
         TaskSchedule.executeQuery '''
 select new map(
   schedule.id as id,
@@ -222,31 +244,25 @@ join courseClass.teacher courseTeacher
 join schedule.teacher scheduleTeacher
 left join task.courseItem courseItem
 left join schedule.place place
-where (courseClass.term.id, courseClass.department.id, course.id) in (
-    select courseClass2.term.id, courseClass2.department.id, courseClass2.course.id
-    from FreeListenForm form
-    join form.items item
-    join item.taskSchedule schedule
-    join schedule.task task
-    join task.courseClass courseClass2
-    where form.id = :formId
-    and courseClass2.id <> courseClass.id
-) and not exists (
+where courseClass.term.id = :termId
+and courseClass.department.id = :departmentId
+and course.id = :courseId
+and courseClass.id <> :courseClassId
+and not exists (
     select 1
     from TaskSchedule ts
     join ts.task task
     join task.students taskStudent
     join task.courseClass courseClass
-    where (courseClass.term, taskStudent.student) = (
-        select term, student from FreeListenForm where id = :formId
-    )
+    where courseClass.term.id = :termId
+    and taskStudent.student.id = :studentId
     and ts.dayOfWeek = schedule.dayOfWeek
     and exists (
         select 1
         from SerialNumber s1
         join SerialNumber s2 on s1.id = s2.id
-        where s1.id between ts.startSection and ts.startSection + ts.totalSection -1
-          and s2.id between schedule.startSection and schedule.startSection + schedule.totalSection -1
+        where s1.id between ts.startSection and ts.startSection + ts.totalSection - 1
+          and s2.id between schedule.startSection and schedule.startSection + schedule.totalSection - 1
     )
     and exists (
         select 1
@@ -257,7 +273,7 @@ where (courseClass.term.id, courseClass.department.id, course.id) in (
           and s2.id between schedule.startWeek and schedule.endWeek
           and (schedule.oddEven = 0 or s2.oddEven = schedule.oddEven)
     )
-)''', [formId: formId]
+)''', courseClassInfo
     }
 
     def getFormForCreate(Term term, String studentId) {
@@ -301,7 +317,7 @@ where (courseClass.term.id, courseClass.department.id, course.id) in (
 
         cmd.addedItems.each { item ->
             form.addToItems(new FreeListenItem(
-                   taskSchedule: TaskSchedule.load(item)
+                    taskSchedule: TaskSchedule.load(item)
             ))
         }
 
