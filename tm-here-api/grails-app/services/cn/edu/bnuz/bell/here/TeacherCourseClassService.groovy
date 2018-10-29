@@ -4,7 +4,6 @@ import cn.edu.bnuz.bell.here.dto.CourseClassAttendanceStats
 import cn.edu.bnuz.bell.http.ForbiddenException
 import cn.edu.bnuz.bell.http.NotFoundException
 import cn.edu.bnuz.bell.operation.CourseClass
-import cn.edu.bnuz.bell.operation.TaskSchedule
 import grails.gorm.transactions.Transactional
 
 @Transactional(readOnly = true)

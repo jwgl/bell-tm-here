@@ -4,15 +4,13 @@ import cn.edu.bnuz.bell.http.ForbiddenException
 import cn.edu.bnuz.bell.http.ServiceExceptionHandler
 import cn.edu.bnuz.bell.master.TermService
 import cn.edu.bnuz.bell.organization.StudentService
-import cn.edu.bnuz.bell.report.ReportClientService
-import cn.edu.bnuz.bell.report.ReportRequest
 import cn.edu.bnuz.bell.security.SecurityService
 import org.springframework.security.access.prepost.PreAuthorize
 
 /**
  * 按部门/班主任/辅导员查询考勤情况。
  */
-@PreAuthorize('hasAnyAuthority("PERM_ATTENDANCE_DEPT_ADMIN", "PERM_ATTENDANCE_CLASS_ADMIN")')
+@PreAuthorize('hasAnyAuthority("PERM_EXAM_DISQUAL_DEPT_ADMIN", "PERM_ATTENDANCE_DEPT_ADMIN", "PERM_ATTENDANCE_CLASS_ADMIN")')
 class AttendanceController implements ServiceExceptionHandler {
     AttendanceService attendanceService
     TermService termService
@@ -26,6 +24,7 @@ class AttendanceController implements ServiceExceptionHandler {
      */
     def show(String id, Integer termId) {
         if (securityService.hasRole('ROLE_STUDENT') && securityService.userId == id ||
+                securityService.hasRole('ROLE_ACADEMIC_SECRETARY') && securityService.departmentId == studentService.getDepartment(id)?.id ||
                 securityService.hasRole('ROLE_ROLLCALL_DEPT_ADMIN') && securityService.departmentId == studentService.getDepartment(id)?.id ||
                 securityService.hasRole('ROLE_STUDENT_COUNSELLOR') && securityService.userId == studentService.getCounsellor(id)?.id ||
                 securityService.hasRole('ROLE_CLASS_SUPERVISOR') && securityService.userId == studentService.getSupervisor(id)?.id) {
