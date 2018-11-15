@@ -1,11 +1,12 @@
 package cn.edu.bnuz.bell.here
 
 import cn.edu.bnuz.bell.http.ForbiddenException
+import cn.edu.bnuz.bell.http.ServiceExceptionHandler
 import cn.edu.bnuz.bell.master.TermService
 import cn.edu.bnuz.bell.organization.StudentService
 import cn.edu.bnuz.bell.security.SecurityService
 
-class StudentAttendanceController {
+class StudentAttendanceController implements ServiceExceptionHandler {
     AttendanceService attendanceService
     TermService termService
     SecurityService securityService
