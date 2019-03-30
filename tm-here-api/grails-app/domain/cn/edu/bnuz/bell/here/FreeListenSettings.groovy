@@ -52,8 +52,8 @@ class FreeListenSettings {
 
     static mapping = {
         comment '免听设置'
-        id             column: 'term_id', type: 'integer', generator: 'foreign', params: [ property: 'term']
-        term           comment: '学期', insertable: false, updateable: false
+        id             column: 'term_id', type: 'integer', generator: 'foreign', params: [ property: 'term'], comment: '学期'
+        term           insertable: false, updateable: false
         applyStartDate comment: '免听申请开始时间'
         applyEndDate   comment: '免听申请结束时间'
         checkStartDate comment: '免听审核开始时间'
