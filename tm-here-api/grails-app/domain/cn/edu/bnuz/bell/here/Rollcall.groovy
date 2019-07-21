@@ -3,7 +3,6 @@ package cn.edu.bnuz.bell.here
 import cn.edu.bnuz.bell.operation.TaskSchedule
 import cn.edu.bnuz.bell.organization.Student
 import cn.edu.bnuz.bell.organization.Teacher
-import org.joda.time.DateTime
 
 /**
  * 考勤记录。

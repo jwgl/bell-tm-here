@@ -42,7 +42,7 @@ order by courseClass.term.id desc
 ''', [teacherId: teacherId, startTerm: rollcallStartTerm()])
     }
 
-    @Cacheable("rollcall.start_term")
+    // @Cacheable("rollcall.start_term")
     private Integer rollcallStartTerm() {
         systemConfigService.get('rollcall.start_term', 0)
     }
