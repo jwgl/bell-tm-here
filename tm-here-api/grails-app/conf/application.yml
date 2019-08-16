@@ -133,8 +133,9 @@ eureka:
 
 security:
     oauth2:
-        jwt:
-            key-uri: http://localhost/uaa/publicKey
+        resource:
+            jwt:
+                key-uri: http://localhost/uaa/publicKey
         client:
             client-id: ${info.app.name}
 
