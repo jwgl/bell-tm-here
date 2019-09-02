@@ -7,6 +7,8 @@ import cn.edu.bnuz.bell.report.ReportRequest
 import cn.edu.bnuz.bell.security.SecurityService
 import org.springframework.security.access.prepost.PreAuthorize
 
+import java.text.SimpleDateFormat
+
 @PreAuthorize('hasAuthority("PERM_ATTENDANCE_CLASS_ADMIN")')
 class TeacherAdminClassController {
     AttendanceService attendanceService
@@ -28,7 +30,7 @@ class TeacherAdminClassController {
 
     def statisReport(String teacherId, Integer termId) {
         def reportRequest = new ReportRequest(
-                reportId: "${termId}-${new Date().format('yyyyMMdd-hhmmss')}",
+                reportId: "$termId-$dateSerialNo",
                 reportName: 'attendance-statis-by-administrator',
                 parameters: [termId: termId, userId: teacherId],
         )
@@ -37,10 +39,14 @@ class TeacherAdminClassController {
 
     def detailReport(String teacherId, Integer termId) {
         def reportRequest = new ReportRequest(
-                reportId: "${termId}-${new Date().format('yyyyMMdd-hhmmss')}",
+                reportId: "$termId-$dateSerialNo",
                 reportName: 'attendance-detail-by-administrator',
                 parameters: [termId: termId, userId: teacherId],
         )
         reportClientService.runAndRender(reportRequest, response)
+    }
+
+    private String getDateSerialNo() {
+        new SimpleDateFormat('yyyyMMdd-hhmmss').format(new Date())
     }
 }
