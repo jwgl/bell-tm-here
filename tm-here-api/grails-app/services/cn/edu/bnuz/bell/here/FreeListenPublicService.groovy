@@ -83,11 +83,11 @@ where form.status = 'APPROVED'
     }
 
     /**
-     * 查找与考勤命令相关的免听记录
-     * @param cmd
+     * 查找与排课相关的免听记录
+     * @param taskScheduleIds 排课Id列表
      * @return 免听列表
      */
-    def listByTimeslot(TeacherTimeslotCommand cmd) {
+    def listByWeekAndTaskSchedules(List<UUID> taskScheduleIds) {
         FreeListenForm.executeQuery '''
 select new map(
   form.id as id,
@@ -100,22 +100,12 @@ join courseClass.tasks task
 join task.schedules taskSchedule
 join task.students taskStudent
 where form.status = 'APPROVED'
-  and form.term.id = :termId
+  and form.term = courseClass.term
   and (item.taskSchedule = taskSchedule
    or item.taskSchedule = taskSchedule.root.id)
   and form.student = taskStudent.student
-  and form.term = courseClass.term
-  and :week between taskSchedule.startWeek and taskSchedule.endWeek
-  and (
-    taskSchedule.oddEven = 0 or
-    taskSchedule.oddEven = 1 and :week % 2 = 1 or
-    taskSchedule.oddEven = 2 and :week % 2 = 0
-  )
-  and taskSchedule.dayOfWeek = :dayOfWeek
-  and taskSchedule.startSection = :startSection
-  and taskSchedule.totalSection = :totalSection
-  and taskSchedule.teacher.id = :teacherId
-''', cmd as Map
+  and taskSchedule.id in (:taskScheduleIds)
+''', [taskScheduleIds: taskScheduleIds]
     }
 
 

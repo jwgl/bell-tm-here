@@ -31,7 +31,7 @@ class StudentLeavePublicService {
 
         return [
                 schedules: schedules,
-                form: form,
+                form     : form,
         ]
     }
 
@@ -92,11 +92,12 @@ class StudentLeavePublicService {
     }
 
     /**
-     * 查找与考勤命令相关的学生请假。
-     * @param cmd 考勤命令
+     * 查找与排课相关的学生请假。
+     * @Param week 指定周次
+     * @param taskScheduleIds 排课Id列表
      * @return 请假列表
      */
-    def listByTimeslot(TeacherTimeslotCommand cmd) {
+    def listByWeekAndTaskSchedules(Integer week, List<UUID> taskScheduleIds) {
         StudentLeaveForm.executeQuery '''
 select new map(
   form.id as id,
@@ -104,31 +105,18 @@ select new map(
   form.type as type
 )
 from StudentLeaveForm form
-join form.items item,
-     CourseClass courseClass
+join form.items item, CourseClass courseClass
 join courseClass.tasks task
 join task.schedules taskSchedule
 join task.students taskStudent
 where form.status in ('APPROVED', 'FINISHED')
-  and form.term.id = :termId
-  and item.week = :week
-  and (
-    item.taskSchedule = taskSchedule or
-    item.dayOfWeek = taskSchedule.dayOfWeek or
-    item.taskSchedule is null and item.dayOfWeek is null
-  )
-  and form.student = taskStudent.student
   and form.term = courseClass.term
-  and :week between taskSchedule.startWeek and taskSchedule.endWeek
-  and (
-    taskSchedule.oddEven = 0 or
-    taskSchedule.oddEven = 1 and :week % 2 = 1 or
-    taskSchedule.oddEven = 2 and :week % 2 = 0
-  )
-  and taskSchedule.dayOfWeek = :dayOfWeek
-  and taskSchedule.startSection = :startSection
-  and taskSchedule.totalSection = :totalSection
-  and taskSchedule.teacher.id = :teacherId
-''', cmd as Map
+  and item.week = :week
+  and (item.taskSchedule = taskSchedule
+    or item.dayOfWeek = taskSchedule.dayOfWeek
+    or item.taskSchedule is null and item.dayOfWeek is null)
+  and form.student = taskStudent.student
+  and taskSchedule.id in (:taskScheduleIds)
+''', [week: week, taskScheduleIds: taskScheduleIds]
     }
 }
