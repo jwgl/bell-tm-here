@@ -16,7 +16,7 @@ class RollcallService {
     FreeListenPublicService freeListenPublicService
 
     def list(TeacherTimeslotCommand cmd) {
-        def taskScheduleIds = TaskSchedule.executeQuery '''
+        List<UUID> taskScheduleIds = TaskSchedule.executeQuery '''
 select taskSchedule.id
 from CourseClass courseClass
 join courseClass.tasks task
@@ -52,7 +52,23 @@ where taskSchedule.id in (:taskScheduleIds)
 order by student.id
 ''', [taskScheduleIds: taskScheduleIds]
 
-        def rollcalls = Rollcall.executeQuery '''
+        [
+                students   : students,
+                rollcalls  : listByWeekAndTaskSchedules(cmd.week, taskScheduleIds),
+                leaves     : studentLeavePublicService.listByWeekAndTaskSchedules(cmd.week, taskScheduleIds),
+                freeListens: freeListenPublicService.listByWeekAndTaskSchedules(taskScheduleIds),
+                attendances: TimeslotAttendanceStats.statsByTimeslot(cmd),
+        ]
+    }
+
+    /**
+     * 查找与排课相关的学生请假。
+     * @Param week 指定周次
+     * @param taskScheduleIds 排课Id列表
+     * @return 考勤列表
+     */
+    def listByWeekAndTaskSchedules(Integer week, List<UUID> taskScheduleIds) {
+        Rollcall.executeQuery '''
 select new map (
   rollcall.id as id,
   rollcall.student.id as studentId,
@@ -65,15 +81,7 @@ join task.students taskStudent
 where taskStudent.student = rollcall.student
 and rollcall.week = :week
 and taskSchedule.id in (:taskScheduleIds)
-''', [week: cmd.week, taskScheduleIds: taskScheduleIds]
-
-        [
-                students   : students,
-                rollcalls  : rollcalls,
-                leaves     : studentLeavePublicService.listByTimeslot(cmd),
-                freeListens: freeListenPublicService.listByTimeslot(cmd),
-                attendances: TimeslotAttendanceStats.statsByTimeslot(cmd),
-        ]
+''', [week: week, taskScheduleIds: taskScheduleIds]
     }
 
     def create(String teacherId, RollcallCreateCommand cmd) {
