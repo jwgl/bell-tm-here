@@ -116,7 +116,7 @@ where form.student.id = :studentId
         def termId = form.term as Integer
         def formId = form.id as Integer
         def settings = FreeListenSettings.get(termId)
-        if (settings.betweenCheckDateRange()) {
+        if (settings.betweenApplyDateRange()) {
             form.editable = domainStateMachineHandler.canUpdate(form)
         } else {
             form.editable = false
@@ -334,7 +334,7 @@ and not exists (
             throw new NotFoundException()
         }
 
-        if (!FreeListenSettings.get(form.termId).betweenCheckDateRange()) {
+        if (!FreeListenSettings.get(form.termId).betweenApplyDateRange()) {
             throw new BadRequestException()
         }
 
@@ -396,7 +396,7 @@ and not exists (
             throw new NotFoundException()
         }
 
-        if (!FreeListenSettings.get(form.termId).betweenCheckDateRange()) {
+        if (!FreeListenSettings.get(form.termId).betweenApplyDateRange()) {
             throw new BadRequestException("Exceed check dates.")
         }
 
