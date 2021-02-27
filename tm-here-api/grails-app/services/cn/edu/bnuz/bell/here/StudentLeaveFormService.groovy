@@ -4,15 +4,12 @@ import cn.edu.bnuz.bell.http.BadRequestException
 import cn.edu.bnuz.bell.http.ForbiddenException
 import cn.edu.bnuz.bell.http.NotFoundException
 import cn.edu.bnuz.bell.master.Term
+import cn.edu.bnuz.bell.master.TermService
 import cn.edu.bnuz.bell.operation.ScheduleService
 import cn.edu.bnuz.bell.operation.TaskSchedule
 import cn.edu.bnuz.bell.organization.Student
 import cn.edu.bnuz.bell.security.User
-import cn.edu.bnuz.bell.master.TermService
-import cn.edu.bnuz.bell.workflow.DomainStateMachineHandler
-import cn.edu.bnuz.bell.workflow.WorkflowActivity
-import cn.edu.bnuz.bell.workflow.WorkflowInstance
-import cn.edu.bnuz.bell.workflow.Workitem
+import cn.edu.bnuz.bell.workflow.*
 import cn.edu.bnuz.bell.workflow.commands.SubmitCommand
 import grails.gorm.transactions.Transactional
 
@@ -23,7 +20,7 @@ class StudentLeaveFormService {
     TermService termService
     ScheduleService scheduleService
 
-    @Resource(name='studentLeaveFormStateHandler')
+    @Resource(name = 'studentLeaveFormStateHandler')
     DomainStateMachineHandler domainStateMachineHandler
 
     def list(String studentId, Integer offset, Integer max) {
@@ -105,7 +102,7 @@ where item.form.id = :formId
 
         return [
                 schedules: schedules,
-                form: form,
+                form     : form,
         ]
     }
 
@@ -114,16 +111,16 @@ where item.form.id = :formId
         def schedules = scheduleService.getStudentSchedules(term.id, studentId)
 
         return [
-                term: [
-                        startWeek: term.startWeek,
-                        endWeek: term.endWeek,
+                term        : [
+                        startWeek  : term.startWeek,
+                        endWeek    : term.endWeek,
                         currentWeek: term.currentWeek,
                 ],
-                form: [
+                form        : [
                         items: [],
                 ],
-                schedules: schedules,
-                freeListens: [],
+                schedules   : schedules,
+                freeListens : [],
                 existedItems: findExistedLeaveItems(term, studentId, 0),
         ]
     }
@@ -143,14 +140,14 @@ where item.form.id = :formId
         def term = Term.get(form.term)
 
         return [
-                term: [
-                        startWeek: term.startWeek,
-                        endWeek: term.endWeek,
+                term        : [
+                        startWeek  : term.startWeek,
+                        endWeek    : term.endWeek,
                         currentWeek: term.currentWeek,
                 ],
-                form: form,
-                schedules: schedules,
-                freeListens: [],
+                form        : form,
+                schedules   : schedules,
+                freeListens : [],
                 existedItems: findExistedLeaveItems(term, studentId, id),
         ]
     }
@@ -175,7 +172,8 @@ join item.form form
 where form.student.id = :studentId
   and form.term = :term
   and form.id != :excludeFormId
-''', [studentId: studentId, term: term, excludeFormId: excludeFormId]
+  and form.status != :closedStatus
+''', [studentId: studentId, term: term, excludeFormId: excludeFormId, closedStatus: State.CLOSED]
     }
 
     StudentLeaveForm create(String studentId, StudentLeaveFormCommand cmd) {
@@ -191,7 +189,7 @@ where form.student.id = :studentId
                 status: domainStateMachineHandler.initialState
         )
 
-        cmd.addedItems.each { item->
+        cmd.addedItems.each { item ->
             form.addToItems(new StudentLeaveItem(
                     week: item.week,
                     dayOfWeek: item.dayOfWeek,
